@@ -11,7 +11,10 @@
 
 // The following include is for storing data to EEPROM
 #include <EEPROM.h>
+#include <LiquidCrystal_I2C.h>
 
+
+LiquidCrystal_I2C lcd(0x3F, 16, 2);
 String RequestLEDoff;
 String RequestLEDon;
 String StatusLEDoff;
@@ -21,8 +24,8 @@ String RequestStop;
 boolean readStop;
 
 // SSID Credentials
-char* wifi_ssid = "Binh";
-char* wifi_pwd = "123456789";
+char* wifi_ssid = "Bears' Cave";
+char* wifi_pwd = "06152009usa";
 
 // MQTT Server Credentials
 char* mqtt_server = "m11.cloudmqtt.com";
@@ -156,33 +159,41 @@ void save_data(char* data) {
   delay(100);
 }
 
-
 void load_data() {
+  Serial.println("Read data from EEPROM");
   EEPROM.begin(512);
+  char data[100] = "";
   int count = 0;
   int address = 0;
-  char data[100];
-  while (count < 6) {
+  while (count < 6)
+  {
     char read_char = (char)EEPROM.read(address);
     delay(1);
-    if (read_char == '#') {
+    strncat(data, &read_char, 1);
+    if (read_char == '#')
       ++count;
-      switch (count) {
-        case 1: strcpy(wifi_ssid, data); break;
-        case 2: strcpy(wifi_pwd, data); break;
-        case 3: strcpy(mqtt_server, data); break;
-        case 4: strcpy(mqtt_port, data); break;
-        case 5: strcpy(mqtt_user, data); break;
-        case 6: strcpy(mqtt_pwd, data); break;
-      }
-      strcpy(data,"");
-    } 
-    else {
-      strncat(data, &read_char, 1);  
-    }
     ++address;
   }
+  Serial.println("Read data complete");
+  Serial.println(data);
   delay(100);
+
+
+  char* pch;
+  count = 0;
+  pch = strtok(data, "#");
+  while (pch != NULL) {
+    ++count;
+    switch(count) {
+        case 1: strcpy(wifi_ssid, pch); break;
+        case 2: strcpy(wifi_pwd, pch); break;
+        case 3: strcpy(mqtt_server, pch); break;
+        case 4: strcpy(mqtt_port, pch); break;
+        case 5: strcpy(mqtt_user, pch); break;
+        case 6: strcpy(mqtt_pwd, pch); break;
+    }
+    pch = strtok(NULL, "#");
+  }
 }
 
 void data_setup(char* data) {
@@ -209,6 +220,12 @@ void setup() {
   pinMode(13, OUTPUT);
   Serial.begin(115200);
 
+  //Initialize LCD
+  lcd.begin(16,2);
+  lcd.init();
+  lcd.backlight();
+  
+
   Serial.println();
   Serial.println();
 
@@ -224,12 +241,23 @@ void setup() {
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(wifi_ssid);
+
+  lcd.setCursor(0, 0);
+  lcd.print("Connecting to");
+  lcd.setCursor(0, 1);
+  lcd.print(wifi_ssid);
+  
+  delay(1000);
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
   
   WiFi.begin(wifi_ssid, wifi_pwd);
 
   for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
     delay(500);
     Serial.print(".");
+    lcd.print(".");  
     if (c == 30) {
       Serial.println();
       Serial.println("Connection Time Out...");
@@ -242,9 +270,16 @@ void setup() {
       ESP.reset();
     }
   }
+
+
+  delay(1000);
+  lcd.clear();
   
   Serial.println("connected");
-    
+
+  lcd.setCursor(0, 0);
+  lcd.print("connected");
+  
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
   RequestLEDoff = "RqstOFF";
@@ -269,12 +304,22 @@ void loop() {
     lastMsg = now;
     printAnalog(readStop);
     if(LED){
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("STATUS ON");
+      lcd.setCursor(0, 1);
+      lcd.print("REQUEST OFF");
       snprintf (msg, 75, "StatusON", value);
       client.publish("topic/1", msg);
       snprintf (msg, 75, "RqstOFF", value);
       client.publish("topic/1", msg);
     }
     else{
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("STATUS OFF");
+      lcd.setCursor(0, 1);
+      lcd.print("REQUEST ON");
       snprintf (msg, 75, "StatusOFF", value);
       client.publish("topic/1", msg);
       snprintf (msg, 75, "RqstON", value);
