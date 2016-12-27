@@ -1,4 +1,6 @@
 A0 - PDN
 EN - PUN
+D1 - SCL (LCD)
+D2 - SDA (LCD)
 D4 - PUN
 D8 - PDN
