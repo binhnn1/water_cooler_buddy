@@ -396,6 +396,7 @@ void loop() {
   if (digitalRead(12)) {
     Serial.println("MOTION DETECTED");
     Serial.println("RESET CLOCK");
+    digitalWrite(13, HIGH);
     setDS3231time(0,0,0);
   } else {
     Serial.println("NO MOTION");
@@ -405,17 +406,30 @@ void loop() {
       byte second, minute, hour;
       readDS3231time(&second, &minute, &hour);
       int t = second + +60*minute + 3600*hour;
-      delay(3000);
-      Serial.print("READ TIME: ");
-      Serial.println(t);
-//      Serial.println(second);
-//      Serial.println(minute);
-//      Serial.println(hour);
+      delay(5000);
+
+      // Print out current count time to LCD
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Time: ");
+      lcd.setCursor(0, 1);
+      lcd.print(t);
+
       if (digitalRead(12)) {
-        Serial.println("KEEP OPERATING");
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Detect Motion");
+        lcd.setCursor(0, 1);
+        lcd.print("Turn ON");
+        break;
       } else {
-        if (t > 12) {
-          Serial.println("SIGNAL OFF");
+        if (t >= 20) {
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("Exceed 30 minutes");
+          lcd.setCursor(0, 1);
+          lcd.print("Turn OFF");
+          digitalWrite(13, LOW);
         }
       }
     }
