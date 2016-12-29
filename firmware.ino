@@ -279,6 +279,11 @@ void data_setup(char* data) {
   Serial.println();
 }
 
+double x;
+int dis;
+int last;
+
+
 /***********************************************************************************/
 void setup() {
   pinMode(13, OUTPUT);
@@ -289,6 +294,10 @@ void setup() {
   lcd.begin(16,2);
   lcd.init();
   lcd.backlight();
+
+
+  //Initialize Infared Sensor
+  last = 0;
   
   Serial.println();
   Serial.println();
@@ -366,33 +375,78 @@ void loop() {
   //RTC Operation
   displayTime();
   delay(3000);
+
+
+  //Infared Sensor Operation
+  x = analogRead(A0);
+
+  while(millis() <= last + 20) {};
   
-  client.loop();
-  long now = millis();
-  if (now - lastMsg > 500) {
-    lastMsg = now;
-    printAnalog(readStop);
-    if(LED){
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("STATUS ON");
-      lcd.setCursor(0, 1);
-      lcd.print("REQUEST OFF");
-      snprintf (msg, 75, "StatusON", value);
-      client.publish("topic/1", msg);
-      snprintf (msg, 75, "RqstOFF", value);
-      client.publish("topic/1", msg);
-    }
-    else{
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("STATUS OFF");
-      lcd.setCursor(0, 1);
-      lcd.print("REQUEST ON");
-      snprintf (msg, 75, "StatusOFF", value);
-      client.publish("topic/1", msg);
-      snprintf (msg, 75, "RqstON", value);
-      client.publish("topic/1", msg);
+  last = millis();
+  dis = 4800/(x-20);
+    
+  if(dis > 80 || dis < 10)
+    Serial.println("Infared: Out of Range");
+  else {
+    Serial.print("Infared distance: ");
+    Serial.println(dis);
+  }
+    
+
+  if (digitalRead(12)) {
+    Serial.println("MOTION DETECTED");
+    Serial.println("RESET CLOCK");
+    setDS3231time(0,0,0);
+  } else {
+    Serial.println("NO MOTION");
+    Serial.println("RESET CLOCK");
+    setDS3231time(0,0,0);
+    while(1) {
+      byte second, minute, hour;
+      readDS3231time(&second, &minute, &hour);
+      int t = second + +60*minute + 3600*hour;
+      delay(3000);
+      Serial.print("READ TIME: ");
+      Serial.println(t);
+//      Serial.println(second);
+//      Serial.println(minute);
+//      Serial.println(hour);
+      if (digitalRead(12)) {
+        Serial.println("KEEP OPERATING");
+      } else {
+        if (t > 12) {
+          Serial.println("SIGNAL OFF");
+        }
+      }
     }
   }
+  
+//  client.loop();
+//  long now = millis();
+//  if (now - lastMsg > 500) {
+//    lastMsg = now;
+//    printAnalog(readStop);
+//    if(LED){
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("STATUS ON");
+//      lcd.setCursor(0, 1);
+//      lcd.print("REQUEST OFF");
+//      snprintf (msg, 75, "StatusON", value);
+//      client.publish("topic/1", msg);
+//      snprintf (msg, 75, "RqstOFF", value);
+//      client.publish("topic/1", msg);
+//    }
+//    else{
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("STATUS OFF");
+//      lcd.setCursor(0, 1);
+//      lcd.print("REQUEST ON");
+//      snprintf (msg, 75, "StatusOFF", value);
+//      client.publish("topic/1", msg);
+//      snprintf (msg, 75, "RqstON", value);
+//      client.publish("topic/1", msg);
+//    }
+//  }
 }
