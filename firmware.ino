@@ -5,9 +5,9 @@
 #include <DNSServer.h>
 #include <WiFiManager.h>
 
-//The following include is for led FSMs
-#include <FiniteStateMachine.h>
-#include <LED.h>
+////The following include is for led FSMs
+//#include <FiniteStateMachine.h>
+//#include <LED.h>
 
 // The following include is for storing data to EEPROM
 #include <EEPROM.h>
@@ -16,6 +16,11 @@
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 #define DS3231_I2C_ADDRESS 0x68
+
+
+// Pin Define
+int relayMain_pin = 13;
+
 
 String RequestRelayMainoff;
 String RequestRelayMainon;
@@ -42,7 +47,7 @@ PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
-boolean LED;
+//boolean LED;
 
 /*********************************************************/
 void printAnalog(boolean readStop){
@@ -71,8 +76,8 @@ void callback(char* topic, byte* payload, unsigned int length1) {
   }
   if(j == RequestRelayMainon.length())
   /*if(sCompare(RequestRelayMainon,payload))*/{
-    digitalWrite(13, HIGH);
-    LED = true;
+    digitalWrite(relayMain_pin, HIGH);
+//    LED = true;
   }
 /*********************************************************/
  for (int i = 0; i < RequestRelayMainoff.length(); i++){
@@ -82,8 +87,8 @@ void callback(char* topic, byte* payload, unsigned int length1) {
   }
   if(k == RequestRelayMainoff.length())
   /*if(sCompare(RequestRelayMainoff,payload))*/{
-    digitalWrite(13, LOW);
-    LED = false;
+    digitalWrite(relayMain_pin, LOW);
+//    LED = false;
   }
 /*********************************************************/
   for (int i = 0; i < RequestAnalog.length(); i++){
@@ -283,10 +288,35 @@ double x;
 int dis;
 int last;
 
+/***********************************************************************************/
 
 /***********************************************************************************/
+// INTERRUPT TRIGGERED BUTTON TO READ POTENTIOMETER
+/***********************************************************************************/
+int btn_readtemp_pin = 14;
+int btn_startup_pin = 15;
+int input_temp = 0;
+
+void ISR_readtemp() {
+  input_temp = analogRead(A0);
+}
+
+void ISR_startup() {
+  ESP.reset();
+}
+/***********************************************************************************/
+
+
+
 void setup() {
-  pinMode(13, OUTPUT);
+  pinMode(btn_readtemp_pin, INPUT);
+  pinMode(btn_startup_pin, INPUT);
+  pinMode(relayMain_pin, OUTPUT);
+  
+  attachInterrupt(btn_readtemp_pin, ISR_readtemp, RISING);
+  attachInterrupt(btn_startup_pin, ISR_startup, RISING);
+
+ 
   Serial.begin(115200);
 
   Wire.begin();
@@ -355,22 +385,24 @@ void setup() {
   
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
+
+  
   RequestRelayMainoff = "RqstOFF";
   RequestRelayMainon = "RqstON";
   StatusRelayMainoff = "StatusOFF";
   StatusRelayMainon = "StatusON";
   RequestAnalog = "RqstA";
   RequestStop = "RqstStop";
-  LED = false;
+//  LED = false;
   readStop = false;
 }
-
 
 /***********************************************************************************/
 void loop() {
   if (!client.connected()) {
     reconnect();
   }
+  client.loop();
 
   //RTC Operation
   displayTime();
@@ -396,7 +428,15 @@ void loop() {
   if (digitalRead(12)) {
     Serial.println("MOTION DETECTED");
     Serial.println("RESET CLOCK");
-    digitalWrite(13, HIGH);
+    
+//    digitalWrite(relayMain_pin, HIGH);
+
+    snprintf (msg, 75, "StatusOFF", value);
+    client.publish("topic/1", msg);
+    snprintf (msg, 75, "RqstON", value);
+    client.publish("topic/1", msg);
+
+    
     setDS3231time(0,0,0);
   } else {
     Serial.println("NO MOTION");
@@ -429,7 +469,14 @@ void loop() {
           lcd.print("Exceed 30 minutes");
           lcd.setCursor(0, 1);
           lcd.print("Turn OFF");
-          digitalWrite(13, LOW);
+
+
+//          digitalWrite(relayMain_pin, LOW);
+
+          snprintf (msg, 75, "StatusON", value);
+          client.publish("topic/1", msg);
+          snprintf (msg, 75, "RqstOFF", value);
+          client.publish("topic/1", msg);
         }
       }
     }
