@@ -17,10 +17,10 @@
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 #define DS3231_I2C_ADDRESS 0x68
 
-String RequestLEDoff;
-String RequestLEDon;
-String StatusLEDoff;
-String StatusLEDon;
+String RequestRelayMainoff;
+String RequestRelayMainon;
+String StatusRelayMainoff;
+String StatusRelayMainon;
 String RequestAnalog;
 String RequestStop;
 boolean readStop;
@@ -64,24 +64,24 @@ void callback(char* topic, byte* payload, unsigned int length1) {
   int l = 0;
   int m = 0;
 /*********************************************************/
-  for (int i = 0; i < RequestLEDon.length(); i++){
-    if((char)payload[i] == RequestLEDon[i]){
+  for (int i = 0; i < RequestRelayMainon.length(); i++){
+    if((char)payload[i] == RequestRelayMainon[i]){
       j++;
     } 
   }
-  if(j == RequestLEDon.length())
-  /*if(sCompare(RequestLEDon,payload))*/{
+  if(j == RequestRelayMainon.length())
+  /*if(sCompare(RequestRelayMainon,payload))*/{
     digitalWrite(13, HIGH);
     LED = true;
   }
 /*********************************************************/
- for (int i = 0; i < RequestLEDoff.length(); i++){
-    if((char)payload[i] == RequestLEDoff[i]){
+ for (int i = 0; i < RequestRelayMainoff.length(); i++){
+    if((char)payload[i] == RequestRelayMainoff[i]){
       k++;
     } 
   }
-  if(k == RequestLEDoff.length())
-  /*if(sCompare(RequestLEDoff,payload))*/{
+  if(k == RequestRelayMainoff.length())
+  /*if(sCompare(RequestRelayMainoff,payload))*/{
     digitalWrite(13, LOW);
     LED = false;
   }
@@ -355,10 +355,10 @@ void setup() {
   
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
-  RequestLEDoff = "RqstOFF";
-  RequestLEDon = "RqstON";
-  StatusLEDoff = "StatusOFF";
-  StatusLEDon = "StatusON";
+  RequestRelayMainoff = "RqstOFF";
+  RequestRelayMainon = "RqstON";
+  StatusRelayMainoff = "StatusOFF";
+  StatusRelayMainon = "StatusON";
   RequestAnalog = "RqstA";
   RequestStop = "RqstStop";
   LED = false;
