@@ -431,8 +431,8 @@ void loop() {
     
 //    digitalWrite(relayMain_pin, HIGH);
 
-    snprintf (msg, 75, "StatusOFF", value);
-    client.publish("topic/1", msg);
+//    snprintf (msg, 75, "StatusOFF", value);
+//    client.publish("topic/1", msg);
     snprintf (msg, 75, "RqstON", value);
     client.publish("topic/1", msg);
 
@@ -461,9 +461,12 @@ void loop() {
         lcd.print("Detect Motion");
         lcd.setCursor(0, 1);
         lcd.print("Turn ON");
+        snprintf (msg, 75, "RqstON", value);
+        client.publish("topic/1", msg);
+        client.loop();
         break;
       } else {
-        if (t >= 20) {
+        if (t >= 10) {
           lcd.clear();
           lcd.setCursor(0,0);
           lcd.print("Exceed 30 minutes");
@@ -471,12 +474,17 @@ void loop() {
           lcd.print("Turn OFF");
 
 
-//          digitalWrite(relayMain_pin, LOW);
-
-          snprintf (msg, 75, "StatusON", value);
-          client.publish("topic/1", msg);
           snprintf (msg, 75, "RqstOFF", value);
           client.publish("topic/1", msg);
+          client.loop();
+          break;
+//
+//          digitalWrite(relayMain_pin, LOW);
+
+//          snprintf (msg, 75, "StatusON", value);
+//          client.publish("topic/1", msg);
+//          snprintf (msg, 75, "RqstOFF", value);
+//          client.publish("topic/1", msg);
         }
       }
     }
