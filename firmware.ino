@@ -5,18 +5,17 @@
 #include <DNSServer.h>
 #include <WiFiManager.h>
 
-////The following include is for led FSMs
-//#include <FiniteStateMachine.h>
-//#include <LED.h>
-
 // The following include is for storing data to EEPROM
-#include <EEPROM.h>
 #include <LiquidCrystal_I2C.h>
-#include <Wire.h>
+#include <RTC_DS3231.h>
+#include <EMem.h>
+
+
+
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
-#define DS3231_I2C_ADDRESS 0x68
-
+RTC_DS3231 rtc(0x68);
+EMem emem;
 
 // Pin Define
 int relayMain_pin = 13;
@@ -31,8 +30,8 @@ String RequestStop;
 boolean readStop;
 
 // SSID Credentials
-char* wifi_ssid = "Bears' Cave";
-char* wifi_pwd = "06152009usa";
+char* wifi_ssid = "Binh";
+char* wifi_pwd = "123456789";
 
 // MQTT Server Credentials
 char* mqtt_server = "m11.cloudmqtt.com";
@@ -114,10 +113,17 @@ void callback(char* topic, byte* payload, unsigned int length1) {
 
 /***********************************************************************************/
 void reconnect() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Connecting to MQTT Server");
+  lcd.setCursor(0, 1);
   while (!client.connected()) {
     Serial.print("Attempting a conenection to MQTT...");
-
-    if (client.connect("ESP8266Client", mqtt_user, mqtt_pwd)) {
+    lcd.print(".");
+    if (client.connect("ESP8266Client", emem.getMqttUser().c_str(), emem.getMqttPwd().c_str())) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Connected");
       Serial.println("connected");
       client.publish("topic/1", "publishing-yes");
       client.subscribe("topic/1");//subscribe to data from topic/1
@@ -151,120 +157,7 @@ void setup_wifi() {
   }
 }
 
-
 /***********************************************************************************/
-// Real Time Clock
-/***********************************************************************************/
-byte decToBcd(byte val) {
-  return( (val/10*16) + (val%10) );
-}
-// Convert binary coded decimal to normal decimal numbers
-byte bcdToDec(byte val) {
-  return( (val/16*10) + (val%16) );
-}
-
-void setDS3231time(byte second, byte minute, byte hour)
-{
-  // sets time and date data to DS3231
-  Wire.beginTransmission(DS3231_I2C_ADDRESS);
-  Wire.write(0); // set next input to start at the seconds register
-  Wire.write(decToBcd(second)); // set seconds
-  Wire.write(decToBcd(minute)); // set minutes
-  Wire.write(decToBcd(hour)); // set hours
- /* Wire.write(decToBcd(dayOfWeek)); // set day of week (1=Sunday, 7=Saturday)
-  Wire.write(decToBcd(dayOfMonth)); // set date (1 to 31)
-  Wire.write(decToBcd(month)); // set month
-  Wire.write(decToBcd(year)); // set year (0 to 99)
-  */
-  Wire.endTransmission();
-}
-
-void readDS3231time(byte *second, byte *minute, byte *hour) {
-  Wire.beginTransmission(DS3231_I2C_ADDRESS);
-  Wire.write(0); // set DS3231 register pointer to 00h
-  Wire.endTransmission();
-  Wire.requestFrom(DS3231_I2C_ADDRESS, 7);
-  // request seven bytes of data from DS3231 starting from register 00h
-  *second = bcdToDec(Wire.read() & 0x7f);
-  *minute = bcdToDec(Wire.read());
-  *hour = bcdToDec(Wire.read() & 0x3f);
-}
-
-void displayTime() {
-  byte second, minute, hour;
-  // retrieve data from DS3231
-  readDS3231time(&second, &minute, &hour);
-  // send it to the serial monitor
-  Serial.print(hour, DEC);
-  // convert the byte variable to a decimal number when displayed
-  Serial.print(":");
-  if (minute<10)
-  {
-    Serial.print("0");
-  }
-  Serial.print(minute, DEC);
-  Serial.print(":");
-  if (second<10)
-  {
-    Serial.print("0");
-  }
-  Serial.print(second, DEC);
-  Serial.println(" ");
-}
-/***********************************************************************************/
-
-/***********************************************************************************/
-// LOAD AND SAVE CREDENTIALS
-/***********************************************************************************/
-void save_data(char* data) {
-  Serial.println("Write data to EEPROM");
-  EEPROM.begin(512);
-  for (int i = 0; i < strlen(data); ++i) {
-    EEPROM.write(i, (int)data[i]);
-    delay(1);
-  }
-  EEPROM.commit();
-  Serial.println("Write data complete");
-  delay(100);
-}
-
-void load_data() {
-  Serial.println("Read data from EEPROM");
-  EEPROM.begin(512);
-  char data[100] = "";
-  int count = 0;
-  int address = 0;
-  while (count < 6)
-  {
-    char read_char = (char)EEPROM.read(address);
-    delay(1);
-    strncat(data, &read_char, 1);
-    if (read_char == '#')
-      ++count;
-    ++address;
-  }
-  Serial.println("Read data complete");
-  Serial.println(data);
-  delay(100);
-
-
-  char* pch;
-  count = 0;
-  pch = strtok(data, "#");
-  while (pch != NULL) {
-    ++count;
-    switch(count) {
-        case 1: strcpy(wifi_ssid, pch); break;
-        case 2: strcpy(wifi_pwd, pch); break;
-        case 3: strcpy(mqtt_server, pch); break;
-        case 4: strcpy(mqtt_port, pch); break;
-        case 5: strcpy(mqtt_user, pch); break;
-        case 6: strcpy(mqtt_pwd, pch); break;
-    }
-    pch = strtok(NULL, "#");
-  }
-}
-
 void data_setup(char* data) {
   char* sep = "#";
   strcat(data, wifiManager._ssid.c_str());
@@ -284,11 +177,11 @@ void data_setup(char* data) {
   Serial.println();
 }
 
+/***********************************************************************************/
 double x;
 int dis;
 int last;
 
-/***********************************************************************************/
 
 /***********************************************************************************/
 // INTERRUPT TRIGGERED BUTTON TO READ POTENTIOMETER
@@ -332,30 +225,30 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  load_data();
+  emem.loadData();
 
-  Serial.println(wifi_ssid);
-  Serial.println(wifi_pwd);
-  Serial.println(mqtt_server);
-  Serial.println(mqtt_port);
-  Serial.println(mqtt_user);
-  Serial.println(mqtt_pwd);
+  Serial.println(emem.getWifiSsid());
+  Serial.println(emem.getWifiPwd());
+  Serial.println(emem.getMqttServer());
+  Serial.println(emem.getMqttPort());
+  Serial.println(emem.getMqttUser());
+  Serial.println(emem.getMqttPwd());
 
   Serial.println();
   Serial.print("Connecting to ");
-  Serial.println(wifi_ssid);
+  Serial.println(emem.getWifiSsid());
 
   lcd.setCursor(0, 0);
   lcd.print("Connecting to");
   lcd.setCursor(0, 1);
-  lcd.print(wifi_ssid);
+  lcd.print(emem.getWifiSsid());
   
   delay(1000);
 
   lcd.clear();
   lcd.setCursor(0, 0);
   
-  WiFi.begin(wifi_ssid, wifi_pwd);
+  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
 
   for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
     delay(500);
@@ -368,7 +261,7 @@ void setup() {
       setup_wifi();
       char data[100] = "";
       data_setup(data);
-      save_data(data);
+      emem.saveData(data);
       delay(1000);
       ESP.reset();
     }
@@ -382,8 +275,10 @@ void setup() {
 
   lcd.setCursor(0, 0);
   lcd.print("connected");
+
   
-  client.setServer(mqtt_server, atoi(mqtt_port));
+  strcpy(mqtt_server, emem.getMqttServer().c_str());
+  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
   client.setCallback(callback);
 
   
@@ -405,7 +300,7 @@ void loop() {
   client.loop();
 
   //RTC Operation
-  displayTime();
+  rtc.displayTime();
   delay(3000);
 
 
@@ -437,14 +332,14 @@ void loop() {
     client.publish("topic/1", msg);
 
     
-    setDS3231time(0,0,0);
+    rtc.setTime(0, 0, 0, 6, 13, 01, 17); // ss:mm:hh - WeekDay - dd:mm:yy
   } else {
     Serial.println("NO MOTION");
     Serial.println("RESET CLOCK");
-    setDS3231time(0,0,0);
+    rtc.setTime(0, 0, 0, 6, 13, 01, 17);
     while(1) {
-      byte second, minute, hour;
-      readDS3231time(&second, &minute, &hour);
+      byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+      rtc.readTime(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
       int t = second + +60*minute + 3600*hour;
       delay(5000);
 
