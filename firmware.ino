@@ -9,16 +9,22 @@
 #include <LiquidCrystal_I2C.h>
 #include <RTC_DS3231.h>
 #include <EMem.h>
-
-
+#include <SPI.h>
+#include "Adafruit_TLC59711.h"
+#include <Wire.h>
+#include <SparkFunSX1509.h>
 
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 RTC_DS3231 rtc(0x68);
 EMem emem;
+Adafruit_TLC59711 tlc = Adafruit_TLC59711(1, 13, 12);
 
-// Pin Define
-int relayMain_pin = 13;
+const byte SX1509_ADDRESS = 0x3E;
+SX1509 io;
+
+const byte SX1509_MOTION_PIN = 15;
+const byte SX1509_RELAY_PIN = 12;
 
 
 String RequestRelayMainoff;
@@ -75,7 +81,9 @@ void callback(char* topic, byte* payload, unsigned int length1) {
   }
   if(j == RequestRelayMainon.length())
   /*if(sCompare(RequestRelayMainon,payload))*/{
-    digitalWrite(relayMain_pin, HIGH);
+//    digitalWrite(relayMain_pin, HIGH);
+    io.digitalWrite(SX1509_RELAY_PIN, HIGH);
+
 //    LED = true;
   }
 /*********************************************************/
@@ -86,7 +94,8 @@ void callback(char* topic, byte* payload, unsigned int length1) {
   }
   if(k == RequestRelayMainoff.length())
   /*if(sCompare(RequestRelayMainoff,payload))*/{
-    digitalWrite(relayMain_pin, LOW);
+//    digitalWrite(relayMain_pin, LOW);
+    io.digitalWrite(SX1509_RELAY_PIN, LOW);
 //    LED = false;
   }
 /*********************************************************/
@@ -204,13 +213,24 @@ void ISR_startup() {
 void setup() {
   pinMode(btn_readtemp_pin, INPUT);
   pinMode(btn_startup_pin, INPUT);
-  pinMode(relayMain_pin, OUTPUT);
+//  pinMode(relayMain_pin, OUTPUT);
   
   attachInterrupt(btn_readtemp_pin, ISR_readtemp, RISING);
   attachInterrupt(btn_startup_pin, ISR_startup, RISING);
 
  
   Serial.begin(115200);
+
+  if (!io.begin(SX1509_ADDRESS))
+  {
+    while (1) ; // If we fail to communicate, loop forever.
+  }
+
+  io.pinMode(SX1509_MOTION_PIN, INPUT);
+  io.pinMode(SX1509_RELAY_PIN, OUTPUT);
+
+  tlc.begin();
+  tlc.write();
 
   Wire.begin();
   //Initialize LCD
@@ -237,6 +257,10 @@ void setup() {
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(emem.getWifiSsid());
+
+
+  tlc.setLED(0,60000, 0,20000);
+  tlc.write();
 
   lcd.setCursor(0, 0);
   lcd.print("Connecting to");
@@ -273,6 +297,11 @@ void setup() {
   
   Serial.println("connected");
 
+
+  tlc.setLED(0, 0, 0, 60000);
+  tlc.write();
+  delay(100);
+  
   lcd.setCursor(0, 0);
   lcd.print("connected");
 
@@ -320,7 +349,7 @@ void loop() {
   }
     
 
-  if (digitalRead(12)) {
+  if (io.digitalRead(SX1509_MOTION_PIN)) {
     Serial.println("MOTION DETECTED");
     Serial.println("RESET CLOCK");
     
@@ -350,7 +379,7 @@ void loop() {
       lcd.setCursor(0, 1);
       lcd.print(t);
 
-      if (digitalRead(12)) {
+      if (io.digitalRead(SX1509_MOTION_PIN)) {
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("Detect Motion");
