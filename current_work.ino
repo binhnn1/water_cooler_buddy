@@ -268,8 +268,8 @@ void doEncoder() {
 
 unsigned long previousMillis = 0;
 
-int selectTemp() {
-  
+int selectTemp()
+{  
   while(true)
   {
     yield();
@@ -281,17 +281,25 @@ int selectTemp() {
     }
     if (currentMillis - previousMillis >= 100)
     {
-      if (digitalRead(encoder0PinA) == io.digitalRead(encoder0PinB)) {
-        encoder0Pos++;
-        if(encoder0Pos >= 190)
-          encoder0Pos = 190;
-      } else {
-        encoder0Pos--;
-        if(encoder0Pos <= 50)
-          encoder0Pos = 50;
-      }
+     n = digitalRead(encoder0PinA);
+     if ((encoder0PinALast == LOW) && (n == HIGH))
+     {
+       if (digitalRead(encoder0PinB) == LOW)
+       {
+         encoder0Pos--;
+       }
+       else
+       {
+         encoder0Pos++;
+       }
+       if(encoder0Pos >= 190)
+        encoder0Pos = 190;
+       else if(encoder0Pos <= 50)
+        encoder0Pos = 50;
       Serial.println (encoder0Pos, DEC);
-      if (digitalRead(encoder0Select))
+     }
+     encoder0PinALast = n;
+     if (digitalRead(encoder0Select))
         return encoder0Pos;
     }
   }
