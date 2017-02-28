@@ -15,7 +15,7 @@
 
 #define thresH 70
 #define thresC 30
-
+#define sampleLoop 10
 /****************************SETUP FOR SX1509 GPIO EXTENDER*****************************/
 const byte SX1509_ADDRESS = 0x3E;
 
@@ -67,6 +67,8 @@ char* mqtt_port = "12201";
 char* mqtt_user = "hculdksf";
 char* mqtt_pwd = "GCGrhTnLhphv";
 /***************************************************************************************/
+
+double tempRead;
 
 
 EMem emem;
@@ -231,13 +233,13 @@ void data_setup(char* data) {
 /***************************************************************************************/
 
 void displayTemp(int i) {
-  double c = thermoArray[i].readCelsius();
+  double c = thermoArray[i].readFarenheit();
   if (isnan(c)) {
     Serial.println("Something wrong with thermocouple!");
   } else {
     Serial.print("Thermocouple ");
     Serial.print(i);
-    Serial.print(". C = "); 
+    Serial.print(". F = "); 
     Serial.println(c);
   }
 }
@@ -261,17 +263,7 @@ int selectTemp()
   {
     yield();
     unsigned long currentMillis = millis();
-//    if (currentMillis - previousMillis >= 1000)
-//    {
-//      Serial.print(".");
-//      previousMillis = currentMillis;
-//    }
-    if (currentMillis - previousMillis >= 30000)
-    {
-      previousMillis = currentMillis;
-      Serial.println("Time out for select temperature");
-      return -10;
-    }
+
     if (currentMillis - previousMillis >= 3)
     {
       previousMillis = currentMillis;
@@ -286,12 +278,32 @@ int selectTemp()
         {
           encoder0Pos+=10;
         }
-        if(encoder0Pos >= 190)
-          encoder0Pos = 190;
+        if(encoder0Pos >= 155)
+          encoder0Pos = 155;
         else if(encoder0Pos <= 50)
           encoder0Pos = 50;
-        Serial.println (encoder0Pos, DEC);
+        
+        Serial.println(encoder0Pos, DEC);
+
+//        lcd.clear();
+        lcd.setCursor(0, 1);
+        lcd.print(encoder0Pos);
+        
       }
+
+      if (currentMillis - previousMillis >= 30000)
+      {
+      previousMillis = currentMillis;
+      Serial.println("Time out for select temperature");
+      
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Time Out");
+      delay(1000);
+      
+      return -10;
+      }
+      
       encoder0PinALast = n;
       if (!io.digitalRead(encoder0Select))
         return encoder0Pos;
@@ -310,22 +322,18 @@ int gcd (int a, int b) {
 
 void setup() {
 
+
+  if (!io.begin(SX1509_ADDRESS))
+    while (1);
+    
   io.pinMode(SX1509_RELAY_HOT, OUTPUT);
   io.pinMode(SX1509_RELAY_COLD, OUTPUT);
   io.pinMode(SX1509_MOTION0, INPUT);
   io.pinMode(SX1509_MOTION1, INPUT);
   io.pinMode(SX1509_MOTION2, INPUT);
-//  io.pinMode(SX1509_ENCODER_PINA, INPUT);
-//  io./pinMode(SX1509_ENCODER_PINB, INPUT);
-//  io.pinMode(SX1509_ENCODER_SELECT, INPUT);
-
   
-  if (!io.begin(SX1509_ADDRESS))
-    while (1);
-    
   io.pinMode(encoder0Select, INPUT);
   io.digitalWrite(encoder0Select, HIGH);
-  
   io.pinMode(encoder0PinA, INPUT); 
   io.digitalWrite(encoder0PinA, HIGH);       // turn on pull-up resistor
   io.pinMode(encoder0PinB, INPUT); 
@@ -347,98 +355,156 @@ void setup() {
   Serial.println();
   Serial.println();
 
-//  emem.loadData();
-//  
-//  Serial.println(emem.getWifiSsid());
-//  Serial.println(emem.getWifiPwd());
-//  Serial.println(emem.getMqttServer());
-//  Serial.println(emem.getMqttPort());
-//  Serial.println(emem.getMqttUser());
-//  Serial.println(emem.getMqttPwd());
-//
-//  Serial.println();
-//  Serial.print("Connecting to ");
-//  Serial.println(emem.getWifiSsid());
-//
-//  lcd.setCursor(0, 0);
-//  lcd.print("Connecting to");
-//  lcd.setCursor(0, 1);
-//  lcd.print(emem.getWifiSsid());
-//
-//  delay(2000);
-//
-//  lcd.clear();
-//  lcd.setCursor(0, 0);
+  emem.loadData();
   
-//  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
-//
-//  for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
-//    delay(500);
-//    Serial.print(".");
-//    lcd.print(".");  
-//    if (c == 30) {
-//      Serial.println();
-//      Serial.println("Connection Time Out...");
-//      Serial.println("Enter AP Mode...");
-//      setup_wifi();
-//      char data[100] = "";
-//      data_setup(data);
-//      emem.saveData(data);
-//      delay(1000);
-//      ESP.reset();
-//    }
-//  }
-//
-//
-//  delay(1000);
-//  lcd.clear();
-//  
-//  Serial.println("connected");
-//
-//  lcd.setCursor(0, 0);
-//  lcd.print("Connected");
-//  delay(1000);
-//  
-//  strcpy(mqtt_server, emem.getMqttServer().c_str());
-//  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
-//  client.setCallback(callback);
+  Serial.println(emem.getWifiSsid());
+  Serial.println(emem.getWifiPwd());
+  Serial.println(emem.getMqttServer());
+  Serial.println(emem.getMqttPort());
+  Serial.println(emem.getMqttUser());
+  Serial.println(emem.getMqttPwd());
+
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(emem.getWifiSsid());
+
+  lcd.setCursor(0, 0);
+  lcd.print("Connecting to");
+  lcd.setCursor(0, 1)
+  ;
+  lcd.print(emem.getWifiSsid());
+
+//  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  
+  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
+  yield();
+  for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
+    
+    delay(500);
+    Serial.print(".");
+    lcd.print(".");  
+    if (c == 30) {
+      
+      Serial.println();
+      Serial.println("Connection Time Out...");
+      Serial.println("Enter AP Mode...");
+      
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Time Out...");
+      lcd.setCursor(0, 1);
+      lcd.print("Enter AP Mode...");
+      
+      setup_wifi();
+      char data[100] = "";
+      data_setup(data);
+      emem.saveData(data);
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Saving Data");
+      lcd.setCursor(0, 1);
+      lcd.print("Rebooting");
+      
+      for (int i = 0; i < 3; ++i)
+      {
+        Serial.print(".");
+        lcd.setCursor(10, 1);
+        lcd.print(".");
+      }
+      lcd.clear();
+      ESP.reset();
+    }
+  }
+
+
+  delay(1000);
+  lcd.clear();
+  
+  Serial.println("connected");
+
+  lcd.setCursor(0, 0);
+  lcd.print("Connected");
+  delay(1000);
+  
+  strcpy(mqtt_server, emem.getMqttServer().c_str());
+  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
+  client.setCallback(callback);
 
   RequestRelayHotOn = "RqstHotON";
   RequestRelayHotOff = "RqstHotOFF";
   RequestRelayColdOn = "RqstColdON";
   RequestRelayColdOff = "RqstColdOFF";  
+//  yield(/);
 }
+
 char msg[50];
 int value = 0;
 byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
 double heaterTemp;
 double coolerTemp;
+//Thermocouple calibration constants
+#define TC1_gain 0.988 //Thermocouple correction gain
+#define TC1_offset -2.5  //Thermocouple correction offset
 
 void loop() {
+  if (!client.connected())
+    reconnect();
 
+  client.loop();
+
+  x = analogRead(A0);
+
+  while(millis() <= last + 20) {};
+  
+  last = millis();
+  dis = 4800/(x-20);
+  
   bool mix = false;
-  if (1 || io.digitalRead(SX1509_MOTION0))
+  if (10 < x < 80 || io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
   {
-    Serial.println("Detect Motion. Turn on Heater and Cooler"); 
+    Serial.println("Detect Motion");
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Detect Motion");
+
     int i = 0;
     while (io.digitalRead(encoder0Select))
     {
-      delay(1000);
+      delay(500);
       yield();
       ++i;
       Serial.print(".");
+      lcd.print(".");
       if (i == 30)
       {
         Serial.println("\nFalse Motion");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("False Motion");
+        delay(1000);
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Sleep Mode");
         break;
       }
     }
     if (!io.digitalRead(encoder0Select))
     {
       Serial.println("Please Select Desired Temperature");
+      
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Select Temp:");
+      
       for(int i = 0; i < 3; ++i)
       {
         Serial.print(".");
+        lcd.print(".");
         delay(1000);
       }
       int inputTemp = selectTemp();
@@ -448,14 +514,43 @@ void loop() {
       }
       Serial.print("Temperature selected: ");
       Serial.println(inputTemp);
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Selected Temperature:");
+      lcd.setCursor(0, 1);
+      lcd.print(inputTemp);
+      
       mix = true;
 
       if (mix)
       {
-        heaterTemp = 180;
-        coolerTemp = 60;
+//        heaterTemp = thermoArray[0].readFarenheit();
+        tempRead = 0;
+        int count = 0;
+        for (int i = 0; i < sampleLoop; ++i)
+        {
+          if (!isnan(tempRead))
+          {
+            tempRead += (TC1_gain*thermoArray[0].readFarenheit())+TC1_offset;
+            ++count;
+          }
+        }
+        heaterTemp = tempRead = tempRead / (double)count;
 
+        tempRead = 0;
+        count = 0;
+        for (int i = 0; i < sampleLoop; ++i)
+        {
+          if (!isnan(tempRead))
+          {
+            tempRead += (TC1_gain*thermoArray[1].readFarenheit())+TC1_offset;
+            ++count;
+          }
+        }
+        coolerTemp = tempRead = tempRead / (double)count;
 
+        
         int choice = 0;
         bool c;
         int stopPoint, diff;
@@ -464,18 +559,34 @@ void loop() {
         {
           choice = 1;
           Serial.println("Turn on Heater");
+          
+//          lcd.clear();
+//          lcd.setCursor(0, 0);
+//          lcd.print("Heater: ON");
+          
           while(heaterTemp < inputTemp)
           {
             yield();
             delay(1000);
             heaterTemp++;
           }
+
           Serial.println("Turn off Heater");
+          
+//          lcd.clear();
+//          lcd.setCursor(0, 0);
+//          lcd.print("Heater: OFF");
+          
         }
         else if (inputTemp < coolerTemp)
         {
           choice = 2;
           Serial.println("Turn on Cooler");
+          
+//          lcd.clear();
+//          lcd.setCursor(0, 0);
+//          lcd.print("Cooler: ON");
+          
           while(coolerTemp > inputTemp)
           {
             yield();
@@ -483,6 +594,10 @@ void loop() {
             coolerTemp--;
           }
           Serial.println("Turn off Cooler");
+
+//          lcd.clear();
+//          lcd.setCursor(0, 0);
+//          lcd.print("Cooler: OFF");
         }
         else
         {
@@ -492,8 +607,6 @@ void loop() {
           int gcdr = gcd(hotPortion, coldPortion);
           hotPortion = hotPortion / gcdr;
           coldPortion = coldPortion / gcdr;
-
-
 
           
           Serial.print("Hot Portion = "); Serial.println(hotPortion);
@@ -514,15 +627,23 @@ void loop() {
         }
 
         i = 0;
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Ready to Dispense");
+        lcd.setCursor(0, 1);
         while(io.digitalRead(SX1509_RELEASE_BUTTON))
         {
           delay(1000);
           yield();
           ++i;
           Serial.print(".");
+          lcd.print(".");
           if (i == 30)
           {
             Serial.println("Time Out");
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("Time out");
             break;
           }
         }
@@ -530,6 +651,13 @@ void loop() {
         while(!io.digitalRead(SX1509_RELEASE_BUTTON))
         {
           yield();
+          
+          lcd.clear();
+          lcd.setCursor(0, 0);
+          lcd.print("Dispensing Water");
+          lcd.setCursor(0, 1);
+          lcd.print(".");
+          
           if (choice == 1)
           {
             Serial.println("Open Hot Solenoid");
@@ -549,27 +677,37 @@ void loop() {
               Serial.println("Close Hot Solenoid");
             delay(diff * 500);
             Serial.println("Close Cold Solenoid");
+            Serial.println("Close Hot Solenoid");
           }
           else if (choice == 0)
           {
             Serial.println("DEBUG");
           }
         }
+        lcd.clear();
       }
     }
   } 
   else
   {
     Serial.println("No Motion Detected");
+    
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("No Motion");
+    
     rtc.setTime(0, 0, 0, 6, 13, 01, 17);
     while(true)
     {
       yield();
       delay(1000);
 
-      if (io.digitalRead(SX1509_MOTION0))
+      if (10 < x < 80 || io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
       {
         Serial.println("Motion Detected. Reset");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Motion Detected");
         break;
       }
       else
@@ -583,7 +721,7 @@ void loop() {
           Serial.println("Exceed 30 minutes");
           Serial.println("Turn off heater and cooler");
 
-          heaterTemp = 190;
+          heaterTemp = 155;
           coolerTemp = 60;
           
           if (heaterTemp < heaterThreshold)
@@ -607,92 +745,4 @@ void loop() {
       }
     }
   }
-//  if (!client.connected())
-//    reconnect();
-//  client.loop();
-
-//  x = analogRead(A0);
-//  while(millis() <= last + 20) {};
-//  if(dis > 80 || dis < 10)
-//    Serial.println("Infared: Out of Range");
-//  else {
-//    Serial.print("Infared distance: ");
-//    Serial.println(dis);
-//  }
-//
-//
-//  if (1 || io.digitalRead(SX1509_MOTION0)) {
-//    
-//    
-//  } else {
-//    Serial.println("NO MOTION");
-//    Serial.println("RESET CLOCK");
-//    rtc.setTime(0, 0, 0, 6, 13, 01, 17);
-//    while(1) {
-//      rtc.readTime(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
-//      int t = second + +60*minute + 3600*hour;
-//      delay(5000);
-//
-//      // Print out current count time to LCD
-//      lcd.clear();
-//      lcd.setCursor(0,0);
-//      lcd.print("Time: ");
-//      lcd.setCursor(0, 1);
-//      lcd.print(t);
-// 
-//      if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2) || (10 < dis < 80)) {
-//        lcd.clear();
-//        lcd.setCursor(0,0);
-//        lcd.print("Detect Motion");
-//        Serial.println("DETECT MOTION");
-////        lcd.setCursor(0, 1);
-////        lcd.print("Turn ON");
-////        snprintf(msg, 75, "RqstHotON", value);
-////        client.publish("topic/1", msg);
-//        
-//        client.loop();
-//        break;
-//      } else {
-//        if (t >= 10) {
-//          lcd.clear();
-//          lcd.setCursor(0, 0);
-//          lcd.print("Exceed 30 minutes");
-//          Serial.println("Exceed 30 min");
-//          lcd.setCursor(0, 1);
-//          lcd.print("Turn OFF");
-//          Serial.println("Turn off");
-//
-//
-//          //          snprintf(msg, 75, "RqstHotOFF", value);
-//          //          client.publish("topic/1", msg);
-//          //          snprintf(msg, 75, "RqstColdOFF", value);
-//          //          client.publish("topic/1", msg);
-//          Serial.println("RqstHotOFF");
-//          Serial.println("RqstColdOFF");
-//
-//          double cH = thermoArray[0].readCelsius();
-//          double cC = thermoArray[1].readCelsius();
-//           if (cH < thresH) {
-//            Serial.println("RqstHotOn");
-//            //            snprintf(msg, 75, "RqstHotON", value);
-//            //            client.publish("topic/1", msg);
-//          } else {
-//            Serial.println("RqstHotOff");
-//            //            snprintf(msg, 75, "RqstHotOFF", value);
-//            //            client.publish("topic/1", msg);
-//          }
-//
-//          if (cC > thresC) {
-//            Serial.println("RqstColdOn");
-//            //            snprintf(msg, 75, "RqstColdON", value);
-//            //            client.publish("topic/1", msg);
-//          } else {
-//            Serial.println("RqstCold Off");
-//            //            snprintf(msg, 75, "RqstColdOFF", value);
-//            //            client.publish("topic/1", msg);
-//          }
-//        }
-//      }
-//    }
-//  }
 }
