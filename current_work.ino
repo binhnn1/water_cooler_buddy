@@ -25,9 +25,9 @@ const byte SX1509_ADDRESS = 0x3E;
 #define SX1509_MOTION1 3
 #define SX1509_MOTION2 4
 
-#define encoder0PinA  14
-#define encoder0PinB  7
-#define encoder0Select 3
+#define encoder0PinA  5
+#define encoder0PinB  6
+#define encoder0Select 7
 
 #define SX1509_RELEASE_BUTTON 8
 /***************************************************************************************/
@@ -249,22 +249,9 @@ int last;
 
 
 int inputTemp = 50;
-int encoder0Pos = 50;
+int encoder0Pos = 100;
 int encoder0PinALast = LOW;
 int n = LOW;
-
-void doEncoder() {
-  if (digitalRead(encoder0PinA) == io.digitalRead(encoder0PinB)) {
-    inputTemp++;
-    if(inputTemp >= 190)
-      inputTemp = 190;
-  } else {
-    inputTemp--;
-    if(inputTemp <= 50)
-      inputTemp = 50;
-  }
-  Serial.println (inputTemp, DEC);
-}
 
 unsigned long previousMillis = 0;
 
@@ -274,43 +261,44 @@ int selectTemp()
   {
     yield();
     unsigned long currentMillis = millis();
+//    if (currentMillis - previousMillis >= 1000)
+//    {
+//      Serial.print(".");
+//      previousMillis = currentMillis;
+//    }
     if (currentMillis - previousMillis >= 30000)
     {
+      previousMillis = currentMillis;
       Serial.println("Time out for select temperature");
-      return - 10;
+      return -10;
     }
-    if (currentMillis - previousMillis >= 100)
+    if (currentMillis - previousMillis >= 3)
     {
-     n = digitalRead(encoder0PinA);
-     if ((encoder0PinALast == LOW) && (n == HIGH))
-     {
-       if (digitalRead(encoder0PinB) == LOW)
-       {
-         encoder0Pos--;
-       }
-       else
-       {
-         encoder0Pos++;
-       }
-       if(encoder0Pos >= 190)
-        encoder0Pos = 190;
-       else if(encoder0Pos <= 50)
-        encoder0Pos = 50;
-      Serial.println (encoder0Pos, DEC);
-     }
-     encoder0PinALast = n;
-     if (digitalRead(encoder0Select))
+      previousMillis = currentMillis;
+      n = io.digitalRead(encoder0PinA);
+      if ((encoder0PinALast == LOW) && (n == HIGH))
+      {
+        if (io.digitalRead(encoder0PinB) == LOW)
+        {
+          encoder0Pos-=10;
+        }
+        else
+        {
+          encoder0Pos+=10;
+        }
+        if(encoder0Pos >= 190)
+          encoder0Pos = 190;
+        else if(encoder0Pos <= 50)
+          encoder0Pos = 50;
+        Serial.println (encoder0Pos, DEC);
+      }
+      encoder0PinALast = n;
+      if (!io.digitalRead(encoder0Select))
         return encoder0Pos;
     }
+    
   }
 }
-
-void buttonPress()
-{
-  Serial.print("Selected: ");
-  Serial.println(inputTemp);
-}
-
 
 int gcd (int a, int b) {
   int c;
@@ -335,19 +323,17 @@ void setup() {
   if (!io.begin(SX1509_ADDRESS))
     while (1);
     
-  pinMode(encoder0Select, INPUT);
-  digitalWrite(encoder0Select, HIGH);
+  io.pinMode(encoder0Select, INPUT);
+  io.digitalWrite(encoder0Select, HIGH);
   
-  pinMode(encoder0PinA, INPUT); 
-  digitalWrite(encoder0PinA, HIGH);       // turn on pull-up resistor
+  io.pinMode(encoder0PinA, INPUT); 
+  io.digitalWrite(encoder0PinA, HIGH);       // turn on pull-up resistor
   io.pinMode(encoder0PinB, INPUT); 
   io.digitalWrite(encoder0PinB, HIGH);       // turn on pull-up resistor
 
-//  attachInterrupt(digitalPinToInterrupt(encoder/0Select),buttonPress,FALLING);
-//  attachInterrupt(digitalPinToInt/errupt(encoder0PinA), doEncoder, CHANGE);  // encoder pin on interrupt 0 - pin A
   Serial.begin (115200);
-  Serial.println("\nstart");                // a personal quirk
-  pinMode(3, FUNC_GPIO3);
+  Serial.println("\nstart");
+//  pinMode(3, FUNC_GPIO3);/
   
 
 
@@ -435,7 +421,7 @@ void loop() {
   {
     Serial.println("Detect Motion. Turn on Heater and Cooler"); 
     int i = 0;
-    while (digitalRead(encoder0Select))
+    while (io.digitalRead(encoder0Select))
     {
       delay(1000);
       yield();
@@ -447,8 +433,14 @@ void loop() {
         break;
       }
     }
-    if (!digitalRead(encoder0Select))
+    if (!io.digitalRead(encoder0Select))
     {
+      Serial.println("Please Select Desired Temperature");
+      for(int i = 0; i < 3; ++i)
+      {
+        Serial.print(".");
+        delay(1000);
+      }
       int inputTemp = selectTemp();
       while(inputTemp < 0) {
         yield();
