@@ -13,8 +13,8 @@
 #include <Wire.h>
 
 
-#define thresH 70
-#define thresC 30
+//#define thresH 135
+//#define thresC 60
 #define sampleLoop 10
 /****************************SETUP FOR SX1509 GPIO EXTENDER*****************************/
 const byte SX1509_ADDRESS = 0x3E;
@@ -34,14 +34,14 @@ const byte SX1509_ADDRESS = 0x3E;
 #define SX1509_SOLENOID_COLD 10
 /***************************************************************************************/
 
-#define heaterThreshold 180
+#define heaterThreshold 145
 #define coolerThreshold 60
 /********************************SETUP FOR THERMOCOUPLES********************************/
 #define MAXDO 12
-#define MAXCS0 13
-#define MAXCS1 14
+#define MAXCS0 14
+#define MAXCS1 13
 #define MAXCS2 16
-#define MAXCLK 15
+#define MAXCLK 3
 
 Adafruit_MAX31855 thermocouple0(MAXCLK, MAXCS0, MAXDO);
 Adafruit_MAX31855 thermocouple1(MAXCLK, MAXCS1, MAXDO);
@@ -276,8 +276,8 @@ int selectTemp()
         {
           encoder0Pos+=10;
         }
-        if(encoder0Pos >= 155)
-          encoder0Pos = 155;
+        if(encoder0Pos >= 160)
+          encoder0Pos = 160;
         else if(encoder0Pos <= 50)
           encoder0Pos = 50;
         
@@ -337,9 +337,18 @@ void setup() {
   io.pinMode(encoder0PinB, INPUT); 
   io.digitalWrite(encoder0PinB, HIGH);       // turn on pull-up resistor
 
+
+  io.pinMode(SX1509_SOLENOID_HOT, OUTPUT);
+  io.pinMode(SX1509_SOLENOID_COLD, OUTPUT);
+  io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
+  io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
+  io.digitalWrite(SX1509_RELAY_HEATER, LOW);
+  io.digitalWrite(SX1509_RELAY_COOLER, LOW);
+  
+  pinMode(3, FUNC_GPIO3);
+  
   Serial.begin (115200);
   Serial.println("\nstart");
-//  pinMode(3, FUNC_GPIO3);/
   
 
 
@@ -452,13 +461,18 @@ double coolerTemp;
 #define lower_hysteresis_1 2  //value for undershoot hysteresis (degrees)
 #define min_trans_time 5000
 
-unsigned long lastswitcheventtime=0; //time in millis() since last switch event
-unsigned long runtime = 0;
-unsigned long lastruntime = 0;
+unsigned long lastswitcheventtimeH=0; //time in millis() since last switch event
+unsigned long runtimeH = 0;
+unsigned long lastruntimeH = 0;
+
+unsigned long lastswitcheventtimeC=0; //time in millis() since last switch event
+unsigned long runtimeC = 0;
+unsigned long lastruntimeC = 0;
+
 byte TCError1=false;
 byte overrideindicator=0;
 byte RelayStatus_1=0;
-
+byte RelayStatus_C=0;
 void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 {
   int temp_read1=0; //initialize the temp variable for the averages
@@ -487,63 +501,71 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   {
     TCError1=false;
   }
- runtime=millis(); //set runtime
- if (lastruntime>runtime) //check for millis() rollover event, prepare accordingly, skip and wait until time reaccumulates
- {
-  overrideindicator=1;
-  lastruntime=runtime;
-  delay (min_trans_time); //delay if overflow event is detected as failsafe
- }
+ if (direct)
+ { 
+  runtimeH=millis(); //set runtime
+  if (lastruntimeH>runtimeH) //check for millis() rollover event, prepare accordingly, skip and wait until time reaccumulates
+  {
+    overrideindicator=1;
+    lastruntimeH=runtimeH;
+    delay (min_trans_time); //delay if overflow event is detected as failsafe
+  }
  
-  if (direct==true)
+  if (RelayStatus_1==0 && temp_read1<=heaterThreshold-lower_hysteresis_1 && min_trans_time<(lastruntimeH-runtimeH) && !overrideindicator)
   {
-    if (RelayStatus_1==0 && temp_read1<=heaterThreshold-lower_hysteresis_1 && min_trans_time<(lastruntime-runtime) && !overrideindicator)
-    {
-            digitalWrite(RelayCtrl_1_Pin, HIGH);
-            lastswitcheventtime = runtime-lastswitcheventtime;  //reset transition time counter (verify no issue with millis() rollover)
-            RelayStatus_1=1;  //toggle relay status indicator
-            lastruntime=runtime;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
-            overrideindicator=0; //reset millis() overflow event indicator
-            
-    }
-     else if (RelayStatus_1==1 && temp_read1>=heaterThreshold+upper_hysteresis_1 && min_trans_time<(lastruntime-runtime) && !overrideindicator)
-      {
-           digitalWrite(RelayCtrl_1_Pin, LOW);
-           lastswitcheventtime =  runtime-lastswitcheventtime; //reset transition time counter (verify no issue with millis() rollover)
-           RelayStatus_1=0;  //toggle relay status indicator
-           lastruntime=runtime;   //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
-           overrideindicator=0; //reset millis() overflow event indicator
-      } 
-    else {}
+    io.digitalWrite(RelayCtrl_1_Pin, HIGH);
+    lastswitcheventtimeH = runtimeH-lastswitcheventtimeH;  //reset transition time counter (verify no issue with millis() rollover)
+    RelayStatus_1=1;  //toggle relay status indicator
+    lastruntimeH=runtimeH;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
+    overrideindicator=0; //reset millis() overflow event indicator
+          
   }
+  else if (RelayStatus_1==1 && temp_read1>=heaterThreshold+upper_hysteresis_1 && min_trans_time<(lastruntimeH-runtimeH) && !overrideindicator)
+  {
+    io.digitalWrite(RelayCtrl_1_Pin, LOW);
+    lastswitcheventtimeH =  runtimeH-lastswitcheventtimeH; //reset transition time counter (verify no issue with millis() rollover)
+    RelayStatus_1=0;  //toggle relay status indicator
+    lastruntimeH=runtimeH;   //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
+    overrideindicator=0; //reset millis() overflow event indicator
+  } 
+  else {}
+ } 
+ else
+ {
+  runtimeC=millis(); //set runtime
+  if (lastruntimeC>runtimeC) //check for millis() rollover event, prepare accordingly, skip and wait until time reaccumulates
+  {
+    overrideindicator=1;
+    lastruntimeC=runtimeC;
+    delay (min_trans_time); //delay if overflow event is detected as failsafe
+  }
+  if (RelayStatus_C==1 && temp_read1<=coolerThreshold-lower_hysteresis_1 && min_trans_time<(lastruntimeC-runtimeC) && !overrideindicator)
+  {
+    io.digitalWrite(RelayCtrl_1_Pin, LOW);
+    lastswitcheventtimeC = runtimeC-lastswitcheventtimeC;  //reset transition time counter (verify no issue with millis() rollover)
+    RelayStatus_C=0;  //toggle relay status indicator
+    lastruntimeC=runtimeC;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
+    overrideindicator=0; //reset millis() overflow event indicator
+        
+  }
+  else if (RelayStatus_C==0 && temp_read1>=coolerThreshold+upper_hysteresis_1 && min_trans_time<(lastruntimeC-runtimeC) && !overrideindicator)
+  {
+       io.digitalWrite(RelayCtrl_1_Pin, HIGH);
+       lastswitcheventtimeC = runtimeC-lastswitcheventtimeC;  //reset transition time counter (verify no issue with millis() rollover)
+       RelayStatus_C=1;  //toggle relay status indicator
+       lastruntimeC=runtimeC;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
+       overrideindicator=0; //reset millis() overflow event indicator
+  } 
+  else {}
+ }
   
-  if (direct==!true)
-  {
-    if (RelayStatus_1==1 && temp_read1<=coolerThreshold-lower_hysteresis_1 && min_trans_time<(lastruntime-runtime) && !overrideindicator)
-    {
-        digitalWrite(RelayCtrl_1_Pin, LOW);
-        lastswitcheventtime = runtime-lastswitcheventtime;  //reset transition time counter (verify no issue with millis() rollover)
-        RelayStatus_1=0;  //toggle relay status indicator
-        lastruntime=runtime;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
-        overrideindicator=0; //reset millis() overflow event indicator
-            
-    }
-     else if (RelayStatus_1==0 && temp_read1>=coolerThreshold+upper_hysteresis_1 && min_trans_time<(lastruntime-runtime) && !overrideindicator)
-      {
-           digitalWrite(RelayCtrl_1_Pin, HIGH);
-           lastswitcheventtime = runtime-lastswitcheventtime;  //reset transition time counter (verify no issue with millis() rollover)
-           RelayStatus_1=1;  //toggle relay status indicator
-           lastruntime=runtime;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
-           overrideindicator=0; //reset millis() overflow event indicator
-      } 
-    else {}
-  }
 //  Serial.print("SetPoint(F): "); Serial.print(temp_set1); Serial.print(" ");
   Serial.print("AmbientCJTemp(C):"); //MAX31855 Internal Cold junction temp reading (in C) (roughly ambient temp to the IC)
   Serial.print(thermoArray[thermoPin].readInternal()); Serial.print(" "); //Read temp from TC controller internal cold junction  
   Serial.print("AvgCurrentTCTemp(F): "); Serial.print(temp_read1); Serial.print(" "); //Display averaged TC temperature
-  Serial.print("RelayStatus: "); Serial.print(RelayStatus_1); Serial.print(" "); //Dis[play the present status of the thermal control relay
-  Serial.print("TimeFromLastToPresentSwitchState(proportional ms): "); Serial.print(lastswitcheventtime); Serial.print(" "); Serial.print("TotalRuntime(ms): "); Serial.println(runtime);
+  Serial.print("RelayStatusHot: "); Serial.print(RelayStatus_1);Serial.print(" "); Serial.print("RelayStatusCold: "); Serial.print(RelayStatus_C); Serial.println(" "); //Dis[play the present status of the thermal control relay
+//  Serial.print("TimeFromLastToPresentSwitchState(proportional ms): "); Serial.print(lastswitcheventtime); Serial.print(" "); Serial.print("TotalRuntime(ms): "); Serial.println(runtime);
+
 }
 
 double sampleTemp(int j)
@@ -648,12 +670,12 @@ void loop() {
         int choice = 0;
         bool c;
         int stopPoint, diff;
-    
+        int hotPortion, coldPortion;
         if (inputTemp > heaterTemp)
         {
           choice = 1;
           Serial.println("Turn on Heater");
-          
+          io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
 //          lcd.clear();
 //          lcd.setCursor(0, 0);
 //          lcd.print("Heater: ON");
@@ -662,10 +684,13 @@ void loop() {
           {
             yield();
             delay(1000);
-            heaterTemp++;
+            heaterTemp = sampleTemp(0);
+            Serial.print("Current heater temp: ");
+            Serial.println(heaterTemp);
           }
 
           Serial.println("Turn off Heater");
+          io.digitalWrite(SX1509_RELAY_HEATER, LOW);
           
 //          lcd.clear();
 //          lcd.setCursor(0, 0);
@@ -676,7 +701,7 @@ void loop() {
         {
           choice = 2;
           Serial.println("Turn on Cooler");
-          
+          io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
 //          lcd.clear();
 //          lcd.setCursor(0, 0);
 //          lcd.print("Cooler: ON");
@@ -685,10 +710,12 @@ void loop() {
           {
             yield();
             delay(1000);
-            coolerTemp--;
+            coolerTemp = sampleTemp(1);
+            Serial.print("Current cooler temp: ");
+            Serial.println(coolerTemp);
           }
           Serial.println("Turn off Cooler");
-
+          io.digitalWrite(SX1509_RELAY_COOLER, LOW);
 //          lcd.clear();
 //          lcd.setCursor(0, 0);
 //          lcd.print("Cooler: OFF");
@@ -696,8 +723,8 @@ void loop() {
         else
         {
           choice = 3;
-          int hotPortion = inputTemp - coolerTemp;
-          int coldPortion = heaterTemp - inputTemp;
+          hotPortion = inputTemp - coolerTemp;
+          coldPortion = heaterTemp - inputTemp;
           int gcdr = gcd(hotPortion, coldPortion);
           hotPortion = hotPortion / gcdr;
           coldPortion = coldPortion / gcdr;
@@ -755,29 +782,46 @@ void loop() {
           if (choice == 1)
           {
             Serial.println("Open Hot Solenoid");
+            io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
           }
           else if (choice == 2)
           {
             Serial.println("Open Cold Solenoid");
+            io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
           }
           else if (choice == 3)
           {
             Serial.println("\nOpen Hot Solenoid");
+            io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
             Serial.println("Open Cold Solenoid");
-            delay(stopPoint * 500);
+            io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
+//            delay(stopPoint * 500);
             if (c)
+            {
+              delay(stopPoint* 500/hotPortion);
               Serial.println("Close Cold Solenoid");
+              io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
+              delay(diff * 500/hotPortion);
+            }
             else
+            {
+              delay(stopPoint* 500/coldPortion);
               Serial.println("Close Hot Solenoid");
-            delay(diff * 500);
-            Serial.println("Close Cold Solenoid");
-            Serial.println("Close Hot Solenoid");
+              io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
+              delay(diff * 500/coldPortion);
+            }
+            
+
           }
           else if (choice == 0)
           {
             Serial.println("DEBUG");
           }
         }
+        Serial.println("Close Cold Solenoid");
+        Serial.println("Close Hot Solenoid");
+        io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
+        io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
         lcd.clear();
       }
     }
@@ -818,9 +862,12 @@ void loop() {
           currentMillis = millis();
           
           control(true, SX1509_RELAY_HEATER, 0);
+          Serial.println("DEBUGING................");
           control(false, SX1509_RELAY_COOLER, 1);
-          
-          if (currentMillis - previousMillis >= 10000)
+
+          Serial.print("Current time: ");
+          Serial.println(currentMillis);
+          if (currentMillis - previousMillis >= 1800000)
           {
             Serial.println("Exceed 30 minutes. Turn Off");
             Serial.println("TURN OFF EVERYTHING");
