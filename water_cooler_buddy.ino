@@ -35,7 +35,7 @@ const byte SX1509_ADDRESS = 0x3E;
 /***************************************************************************************/
 
 #define heaterThreshold 145
-#define coolerThreshold 60
+#define coolerThreshold 55
 /********************************SETUP FOR THERMOCOUPLES********************************/
 #define MAXDO 12
 #define MAXCS0 14
@@ -283,7 +283,7 @@ int selectTemp()
         
         Serial.println(encoder0Pos, DEC);
 
-//        lcd.clear();
+        lcd.clear();
         lcd.setCursor(0, 1);
         lcd.print(encoder0Pos);
         
@@ -451,8 +451,7 @@ char msg[50];
 int value = 0;
 byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
 
-double heaterTemp;
-double coolerTemp;
+double heaterTemp, coolerTemp, mixTemp;
 
 //Thermocouple calibration constants
 #define TC1_gain 0.988 //Thermocouple correction gain
@@ -791,6 +790,21 @@ void loop() {
           }
           else if (choice == 3)
           {
+
+            Serial.print("Residual Water Temp: "); Serial.println(mixTemp);
+            if(mixTemp > inputTemp)
+            {
+              Serial.println("\nOpen Cold Solenoid");
+              io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
+              delay(stopPoint* 200/hotPortion);
+            }
+            else
+            {
+              Serial.println("\nOpen Hot Solenoid");
+              io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
+              delay(stopPoint* 200/coldPortion);
+            }
+            
             Serial.println("\nOpen Hot Solenoid");
             io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
             Serial.println("Open Cold Solenoid");
