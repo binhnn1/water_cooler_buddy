@@ -1,38 +1,48 @@
 *ESP8266:
 A0 - PDN
 EN - PUN
+D0 - MAXCS1
 D1 - SCL (LCD, RTC, SX1509)
 D2 - SDA (LCD, RTC, SX1509)
-D4 - PUN
-D8 - PDN
+D3 - MAXDO
+D4 - MAXCLK
+D5 - CURRENTCLK
+D6 - CURRENTMISO
+D7 - CURRENTMOSI
+D8 - CURRENTCS
+D9 - MAXCS0
+
+//D4 - PUN
+//D8 - PDN
+
 // Thermocouples (x3)
 // 3 thermocouples share MAXDO, MAXCLK, only need seperate MAXCS
-D6 - MAXDO
-D7 - MAXCS0
-D5 - MAXCS1
-D0 - MAXCS2
-D9 - MAXCLK
+D3 - MAXDO
+D9 - MAXCS0
+D0 - MAXCS1
+//D0 - MAXCS2
+D4 - MAXCLK
 
 *Thermocouple0
 Vcc
 Gnd
-MAXDO - D6 (ESP8266)
-MAXCS0 - D7 (ESP8266)
-MAXCLK - D9 (ESP8266)
+MAXDO - D3 (ESP8266)
+MAXCS0 - D9 (ESP8266)
+MAXCLK - D4 (ESP8266)
 
 *Thermocouple1
 Vcc
 Gnd
-MAXDO - D6 (ESP8266)
-MAXCS1 - D5 (ESP8266)
-MAXCLK - D9 (ESP8266)
+MAXDO - D3 (ESP8266)
+MAXCS1 - D0 (ESP8266)
+MAXCLK - D4 (ESP8266)
 
-*Thermocouple2
-Vcc
-Gnd
-MAXDO - D6 (ESP8266)
-MAXCS0 - D0 (ESP8266)
-MAXCLK - D9 (ESP8266)
+//*Thermocouple2
+//Vcc
+//Gnd
+//MAXDO - D6 (ESP8266)
+//MAXCS0 - D0 (ESP8266)
+//MAXCLK - D9 (ESP8266)
 
 
 *LCD
@@ -55,3 +65,5 @@ SDA - D2 (ESP8266)
 6 - EncoderPinB
 7 - EncoderSelect
 8 - Release Button (Dispense Water)
+9 - ResetWiFi Button
+10 - ResetMachine Button
