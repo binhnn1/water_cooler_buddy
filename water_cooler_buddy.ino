@@ -11,7 +11,7 @@
 #include <SPI.h>
 #include <WiFiManager.h>
 #include <Wire.h>
-
+#include <ADE7953.h>
 
 //#define thresH 135
 //#define thresC 60
@@ -37,16 +37,34 @@ const byte SX1509_ADDRESS = 0x3E;
 #define heaterThreshold 145
 #define coolerThreshold 55
 /********************************SETUP FOR THERMOCOUPLES********************************/
-#define MAXDO 12
-#define MAXCS0 14
-#define MAXCS1 13
-#define MAXCS2 16
-#define MAXCLK 3
+//#define MAXDO 0
+//#define MAXCLK 2
+//#define MAXCS0 3      // D4
+//#define MAXCS1 16     // D8
+//#define MAXCS2 16 
+
+#define MAXDO 0
+#define MAXCLK 2
+#define MAXCS0 3      // D4
+#define MAXCS1 16     // D8
+#define MAXCS2 16 
+
+
+#define CURCS 15
+
+//#define MAXCS0 16   //D0
+//#define MAXCS1 0    // D3
+//#define MAXCS2 16 
+//
+
+
+ADE7953 myADE7953(CURCS, 1000000);
 
 Adafruit_MAX31855 thermocouple0(MAXCLK, MAXCS0, MAXDO);
 Adafruit_MAX31855 thermocouple1(MAXCLK, MAXCS1, MAXDO);
 Adafruit_MAX31855 thermocouple2(MAXCLK, MAXCS2, MAXDO);
 Adafruit_MAX31855 thermoArray[3] = {thermocouple0, thermocouple1, thermocouple2};
+
 /***************************************************************************************/
 
 String RequestRelayHotOn;
@@ -61,8 +79,8 @@ String RequestStop;
 boolean readStop;
 
 /**********************************CREDENTIALS*******************************************/
-char* wifi_ssid = "Binh";
-char* wifi_pwd = "123456789";
+char* wifi_ssid = "UCInet Mobile Access";
+char* wifi_pwd = "";
 
 char* mqtt_server = "m11.cloudmqtt.com";
 char* mqtt_port = "12201";
@@ -345,8 +363,9 @@ void setup() {
   io.digitalWrite(SX1509_RELAY_HEATER, LOW);
   io.digitalWrite(SX1509_RELAY_COOLER, LOW);
   
-  pinMode(3, FUNC_GPIO3);
-  
+//  pinMode(3, FUNC_GPIO3);
+//  pinMode(1, FUNC_GPIO1);
+
   Serial.begin (115200);
   Serial.println("\nstart");
   
@@ -385,71 +404,75 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   
-  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
-  yield();
-  for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
-    
-    delay(500);
-    Serial.print(".");
-    lcd.print(".");  
-    if (c == 30) {
-      
-      Serial.println();
-      Serial.println("Connection Time Out...");
-      Serial.println("Enter AP Mode...");
-      
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Time Out...");
-      lcd.setCursor(0, 1);
-      lcd.print("Enter AP Mode...");
-      
-      setup_wifi();
-      char data[100] = "";
-      data_setup(data);
-      emem.saveData(data);
-
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Saving Data");
-      lcd.setCursor(0, 1);
-      lcd.print("Rebooting");
-      
-      for (int i = 0; i < 3; ++i)
-      {
-        Serial.print(".");
-        lcd.setCursor(10, 1);
-        lcd.print(".");
-      }
-      lcd.clear();
-      ESP.reset();
-    }
-  }
-
-
-  delay(1000);
-  lcd.clear();
-  
-  Serial.println("connected");
-
-  lcd.setCursor(0, 0);
-  lcd.print("Connected");
-  delay(1000);
-  
-  strcpy(mqtt_server, emem.getMqttServer().c_str());
-  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
-  client.setCallback(callback);
+//  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
+//  yield();
+//  for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
+//    
+//    delay(500);
+//    Serial.print(".");
+//    lcd.print(".");  
+//    if (c == 30) {
+//      
+//      Serial.println();
+//      Serial.println("Connection Time Out...");
+//      Serial.println("Enter AP Mode...");
+//      
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("Time Out...");
+//      lcd.setCursor(0, 1);
+//      lcd.print("Enter AP Mode...");
+//      
+//      setup_wifi();
+//      char data[100] = "";
+//      data_setup(data);
+//      emem.saveData(data);
+//
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("Saving Data");
+//      lcd.setCursor(0, 1);
+//      lcd.print("Rebooting");
+//      
+//      for (int i = 0; i < 3; ++i)
+//      {
+//        Serial.print(".");
+//        lcd.setCursor(10, 1);
+//        lcd.print(".");
+//      }
+//      lcd.clear();
+//      ESP.reset();
+//    }
+//  }
+//
+//
+//  delay(1000);
+//  lcd.clear();
+//  
+//  Serial.println("connected");
+//
+//  lcd.setCursor(0, 0);
+//  lcd.print("Connected");
+//  delay(1000);
+//  
+//  strcpy(mqtt_server, emem.getMqttServer().c_str());
+//  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
+//  client.setCallback(callback);
 
   RequestRelayHotOn = "RqstHotON";
   RequestRelayHotOff = "RqstHotOFF";
   RequestRelayColdOn = "RqstColdON";
-  RequestRelayColdOff = "RqstColdOFF";  
+  RequestRelayColdOff = "RqstColdOFF";
+
+  delay(200);
+  SPI.begin();
+  delay(200);
+  myADE7953.initialize();
 //  yield(/);
 }
 
 char msg[50];
 int value = 0;
-byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
 
 double heaterTemp, coolerTemp, mixTemp;
 
@@ -526,6 +549,7 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
     RelayStatus_1=0;  //toggle relay status indicator
     lastruntimeH=runtimeH;   //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
     overrideindicator=0; //reset millis() overflow event indicator
+    
   } 
   else {}
  } 
@@ -565,6 +589,49 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   Serial.print("RelayStatusHot: "); Serial.print(RelayStatus_1);Serial.print(" "); Serial.print("RelayStatusCold: "); Serial.print(RelayStatus_C); Serial.println(" "); //Dis[play the present status of the thermal control relay
 //  Serial.print("TimeFromLastToPresentSwitchState(proportional ms): "); Serial.print(lastswitcheventtime); Serial.print(" "); Serial.print("TotalRuntime(ms): "); Serial.println(runtime);
 
+  
+  long apnoload, activeEnergyA;
+  float vRMS, iRMSA, powerFactorA, apparentPowerA, reactivePowerA, activePowerA;
+
+  apnoload = myADE7953.getAPNOLOAD();
+  Serial.print("APNOLOAD (hex): ");
+  Serial.println(apnoload, HEX);
+  delay(200); 
+
+  vRMS = myADE7953.getVrms();  
+  Serial.print("Vrms (V): ");
+  Serial.println(vRMS);
+  delay(200);
+
+  iRMSA = myADE7953.getIrmsA();  
+  Serial.print("IrmsA (mA): ");
+  Serial.println(iRMSA);
+  delay(200);
+
+  apparentPowerA = myADE7953.getInstApparentPowerA();  
+  Serial.print("Apparent Power A (mW): ");
+  Serial.println(apparentPowerA);
+  delay(200);
+
+  activePowerA = myADE7953.getInstActivePowerA();  
+  Serial.print("Active Power A (mW): ");
+  Serial.println(activePowerA);
+  delay(200);
+
+  reactivePowerA = myADE7953.getInstReactivePowerA();  
+  Serial.print("Rective Power A (mW): ");
+  Serial.println(reactivePowerA);
+  delay(200);
+
+  powerFactorA = myADE7953.getPowerFactorA();  
+  Serial.print("Power Factor A (x100): ");
+  Serial.println(powerFactorA);
+  delay(200);
+
+  activeEnergyA = myADE7953.getActiveEnergyA();  
+  Serial.print("Active Energy A (hex): ");
+  Serial.println(activeEnergyA);
+  delay(200);
 }
 
 double sampleTemp(int j)
@@ -583,11 +650,61 @@ double sampleTemp(int j)
 }
 
 bool flag = false;
-void loop() {
-  if (!client.connected())
-    reconnect();
 
-  client.loop();
+
+//void loop()
+//{
+//  long apnoload, activeEnergyA;
+//  float vRMS, iRMSA, powerFactorA, apparentPowerA, reactivePowerA, activePowerA;
+//
+//  apnoload = myADE7953.getAPNOLOAD();
+//  Serial.print("APNOLOAD (hex): ");
+//  Serial.println(apnoload, HEX);
+//  delay(200); 
+//
+//  vRMS = myADE7953.getVrms();  
+//  Serial.print("Vrms (V): ");
+//  Serial.println(vRMS);
+//  delay(200);
+//
+//  iRMSA = myADE7953.getIrmsA();  
+//  Serial.print("IrmsA (mA): ");
+//  Serial.println(iRMSA);
+//  delay(200);
+//
+//  apparentPowerA = myADE7953.getInstApparentPowerA();  
+//  Serial.print("Apparent Power A (mW): ");
+//  Serial.println(apparentPowerA);
+//  delay(200);
+//
+//  activePowerA = myADE7953.getInstActivePowerA();  
+//  Serial.print("Active Power A (mW): ");
+//  Serial.println(activePowerA);
+//  delay(200);
+//
+//  reactivePowerA = myADE7953.getInstReactivePowerA();  
+//  Serial.print("Rective Power A (mW): ");
+//  Serial.println(reactivePowerA);
+//  delay(200);
+//
+//  powerFactorA = myADE7953.getPowerFactorA();  
+//  Serial.print("Power Factor A (x100): ");
+//  Serial.println(powerFactorA);
+//  delay(200);
+//
+//  activeEnergyA = myADE7953.getActiveEnergyA();  
+//  Serial.print("Active Energy A (hex): ");
+//  Serial.println(activeEnergyA);
+//  delay(200);
+//
+//  Serial.println();
+//}
+
+void loop() {
+//  if (!client.connected())
+//    reconnect();
+//
+//  client.loop();
 
   x = analogRead(A0);
 
