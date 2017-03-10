@@ -45,9 +45,9 @@ const byte SX1509_ADDRESS = 0x3E;
 
 #define MAXDO 0
 #define MAXCLK 2
-#define MAXCS0 3      // D4
-#define MAXCS1 16     // D8
-#define MAXCS2 16 
+#define MAXCS0 14     // D5
+#define MAXCS1 12     // D6
+#define MAXCS2 15     // D8
 
 
 #define CURCS 15
@@ -372,9 +372,9 @@ void setup() {
   io.digitalWrite(SX1509_RELAY_COOLER, LOW);
   
 //  pinMode(3, FUNC_GPIO3);
-//  pinMode(1, FUNC_GPIO1);
+//  pinMode(13, FUNC_GPIO13)
 
-  Serial.begin (115200);
+  Serial.begin (9600);
   Serial.println("\nstart");
   
 
@@ -412,8 +412,8 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   
-//  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
-  WiFi.begin("iPhone", "123456789");
+  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
+//  WiFi.begin("iPhone", "123456789");
   yield();
   for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
     
@@ -505,6 +505,11 @@ byte RelayStatus_1=0;
 byte RelayStatus_C=0;
 void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 {
+  client.loop();
+  delay(1000);
+
+  printCurrentDetails();
+  
   int temp_read1=0; //initialize the temp variable for the averages
   double samples[sampleLoop]={0};
   for (int i=0; i<sampleLoop; i++)//read sequential samples
@@ -545,8 +550,8 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   {
     snprintf (msg, 75, "RqstHotON", value);
     client.publish("topic/1", msg);
-    delay(1000);
-    client.loop();
+//    delay(1000);
+//    client.loop();
 //    io.digitalWrite(RelayCtrl_1_Pin, HIGH);
 
     lastswitcheventtimeH = runtimeH-lastswitcheventtimeH;  //reset transition time counter (verify no issue with millis() rollover)
@@ -560,8 +565,8 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 
     snprintf (msg, 75, "RqstHotOFF", value);
     client.publish("topic/1", msg);
-    delay(1000);
-    client.loop();
+//    delay(1000);
+//    client.loop();
 //    io.digitalWrite(RelayCtrl_1_Pin, LOW);
     lastswitcheventtimeH =  runtimeH-lastswitcheventtimeH; //reset transition time counter (verify no issue with millis() rollover)
     RelayStatus_1=0;  //toggle relay status indicator
@@ -584,8 +589,8 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   {
     snprintf (msg, 75, "RqstColdOFF", value);
     client.publish("topic/1", msg);
-    delay(1000);
-    client.loop();
+//    delay(1000);
+//    client.loop();
 //    io.digitalWrite(RelayCtrl_1_Pin, LOW);
     lastswitcheventtimeC = runtimeC-lastswitcheventtimeC;  //reset transition time counter (verify no issue with millis() rollover)
     RelayStatus_C=0;  //toggle relay status indicator
@@ -597,8 +602,8 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   {
     snprintf (msg, 75, "RqstColdON", value);
     client.publish("topic/1", msg);
-    delay(1000);
-    client.loop();
+//    delay(1000);
+//    client.loop();
 //       io.digitalWrite(RelayCtrl_1_Pin, HIGH);
        lastswitcheventtimeC = runtimeC-lastswitcheventtimeC;  //reset transition time counter (verify no issue with millis() rollover)
        RelayStatus_C=1;  //toggle relay status indicator
@@ -676,55 +681,21 @@ double sampleTemp(int j)
 }
 
 bool flag = false;
+String readString;
 
+void printCurrentDetails() {
+  while(Serial.available()) {
+    delay(3);
+    if (Serial.available() > 0) {
+      readString = Serial.readString();
+    }
+    Serial.print("Current Details: ");
+    Serial.println(readString);
+    Serial.println();
+    readString = "";
+  }
+}
 
-//void loop()
-//{
-//  long apnoload, activeEnergyA;
-//  float vRMS, iRMSA, powerFactorA, apparentPowerA, reactivePowerA, activePowerA;
-//
-//  apnoload = myADE7953.getAPNOLOAD();
-//  Serial.print("APNOLOAD (hex): ");
-//  Serial.println(apnoload, HEX);
-//  delay(200); 
-//
-//  vRMS = myADE7953.getVrms();  
-//  Serial.print("Vrms (V): ");
-//  Serial.println(vRMS);
-//  delay(200);
-//
-//  iRMSA = myADE7953.getIrmsA();  
-//  Serial.print("IrmsA (mA): ");
-//  Serial.println(iRMSA);
-//  delay(200);
-//
-//  apparentPowerA = myADE7953.getInstApparentPowerA();  
-//  Serial.print("Apparent Power A (mW): ");
-//  Serial.println(apparentPowerA);
-//  delay(200);
-//
-//  activePowerA = myADE7953.getInstActivePowerA();  
-//  Serial.print("Active Power A (mW): ");
-//  Serial.println(activePowerA);
-//  delay(200);
-//
-//  reactivePowerA = myADE7953.getInstReactivePowerA();  
-//  Serial.print("Rective Power A (mW): ");
-//  Serial.println(reactivePowerA);
-//  delay(200);
-//
-//  powerFactorA = myADE7953.getPowerFactorA();  
-//  Serial.print("Power Factor A (x100): ");
-//  Serial.println(powerFactorA);
-//  delay(200);
-//
-//  activeEnergyA = myADE7953.getActiveEnergyA();  
-//  Serial.print("Active Energy A (hex): ");
-//  Serial.println(activeEnergyA);
-//  delay(200);
-//
-//  Serial.println();
-//}
 
 void loop() {
   if (!client.connected())
@@ -732,6 +703,7 @@ void loop() {
 
   client.loop();
 
+  
   x = analogRead(A0);
 
   while(millis() <= last + 20) {};
@@ -819,8 +791,8 @@ void loop() {
           Serial.println("Turn on Heater");
           snprintf (msg, 75, "RqstHotON", value);
           client.publish("topic/1", msg);
-          delay(1000);
-          client.loop();
+//          delay(1000);
+//          client.loop();
 //          io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
 //          lcd.clear();
 //          lcd.setCursor(0, 0);
@@ -828,19 +800,21 @@ void loop() {
           
           while(heaterTemp < inputTemp)
           {
-//            client.loop();
+
             yield();
             delay(1000);
+            client.loop();
             heaterTemp = sampleTemp(0);
             Serial.print("Current heater temp: ");
             Serial.println(heaterTemp);
           }
-
+client.loop();
           Serial.println("Turn off Heater");
           snprintf (msg, 75, "RqstHotOFF", value);
           client.publish("topic/1", msg);
           delay(1000);
           client.loop();
+          delay(1000);
 //          io.digitalWrite(SX1509_RELAY_HEATER, LOW);
           
 //          lcd.clear();
@@ -854,8 +828,8 @@ void loop() {
           Serial.println("Turn on Cooler");
           snprintf (msg, 75, "RqstColdON", value);
           client.publish("topic/1", msg);
-          delay(1000);
-          client.loop();
+//          delay(5000);
+//          client.loop();
 //          io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
 //          lcd.clear();
 //          lcd.setCursor(0, 0);
@@ -865,6 +839,7 @@ void loop() {
           {
             yield();
             delay(1000);
+            client.loop();
             coolerTemp = sampleTemp(1);
             Serial.print("Current cooler temp: ");
             Serial.println(coolerTemp);
@@ -874,6 +849,7 @@ void loop() {
           client.publish("topic/1", msg);
           delay(1000);
           client.loop();
+          delay(1000);
 //          io.digitalWrite(SX1509_RELAY_COOLER, LOW);
 //          lcd.clear();
 //          lcd.setCursor(0, 0);
