@@ -65,5 +65,7 @@ SDA - D2 (ESP8266)
 6 - EncoderPinB
 7 - EncoderSelect
 8 - Release Button (Dispense Water)
-9 - ResetWiFi Button
-10 - ResetMachine Button
+9 - Solenoid Hot
+10 - Solenoid Cold
+11 - ResetWiFi Button
+12 - ResetMachine Button
