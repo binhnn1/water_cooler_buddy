@@ -1,4 +1,5 @@
 #include <Adafruit_MAX31855.h>
+#include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_TLC59711.h>
 #include <DNSServer.h>
 #include <EMem.h>
@@ -57,6 +58,8 @@ const byte SX1509_ADDRESS = 0x3E;
 //#define MAXCS2 16 
 //
 
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+
 
 ADE7953 myADE7953(CURCS, 1000000);
 
@@ -98,6 +101,7 @@ PubSubClient client(espClient);
 
 char msg[50];
 int value = 0;
+int a = 0;
 /***************************************************************************************/
 void printAnalog(boolean readStop){
   if(readStop){
@@ -303,10 +307,74 @@ int selectTemp()
           encoder0Pos+=10;
         }
         if(encoder0Pos >= 160)
+        {
           encoder0Pos = 160;
+          pwm.setPWM(1,4096, 0);
+          pwm.setPWM(0,4096, 0);
+          delay(500);   
+          pwm.setPWM(1,0, 4096);
+          pwm.setPWM(0,0, 4096);
+          delay(500);
+          pwm.setPWM(1,4096, 0);
+          pwm.setPWM(0,4096, 0);
+        }
         else if(encoder0Pos <= 50)
+        {
           encoder0Pos = 50;
-        
+          pwm.setPWM(4,4096, 0);
+          pwm.setPWM(3,4096, 0);
+          delay(500);   
+          pwm.setPWM(4,0, 4096);
+          pwm.setPWM(3,0, 4096);
+          delay(500);
+          pwm.setPWM(4,4096, 0);
+          pwm.setPWM(3,4096, 0);
+        }
+        else
+        {
+          a = (encoder0Pos - 50)/10+1;
+          Serial.println(a);   
+          if(a < 4)
+          {
+            pwm.setPWM(4,(a-1)*(4096/2), 0);
+            pwm.setPWM(3,0, 4096);
+            pwm.setPWM(2,0, 4096);
+            pwm.setPWM(1,0, 4096);
+            pwm.setPWM(0,0, 4096);
+          }
+          else if(a < 6)
+          {
+            pwm.setPWM(4,4096, 0);
+            pwm.setPWM(3,(a-3)*(4096/2), 0);
+            pwm.setPWM(2,0, 4096);
+            pwm.setPWM(1,0, 4096);
+            pwm.setPWM(0,0, 4096);
+          }
+          else if(a < 8)
+          {
+            pwm.setPWM(4,4096, 0);
+            pwm.setPWM(3,4096, 0);
+            pwm.setPWM(2,(a-5)*(4096/2), 0);
+            pwm.setPWM(1,0, 4096);
+            pwm.setPWM(0,0, 4096);
+          }
+          else if(a < 10)
+          {
+            pwm.setPWM(4,4096, 0);
+            pwm.setPWM(3,4096, 0);
+            pwm.setPWM(2,4096, 0);
+            pwm.setPWM(1,(a-7)*(4096/2), 0);
+            pwm.setPWM(0,0, 4096);
+          }
+          else if(a <12)
+          {
+            pwm.setPWM(4,4096, 0);
+            pwm.setPWM(3,4096, 0);
+            pwm.setPWM(2,4096, 0);
+            pwm.setPWM(1,4096, 0);
+            pwm.setPWM(0,(a-9)*(4096/2), 0);
+          }
+        }
         Serial.println(encoder0Pos, DEC);
 
         lcd.clear();
@@ -330,7 +398,27 @@ int selectTemp()
       
       encoder0PinALast = n;
       if (!io.digitalRead(encoder0Select))
+      {
+        pwm.setPWMFreq(1000);
+        pwm.setPWM(4, 4096, 0);
+        pwm.setPWM(3, 4096, 0);
+        pwm.setPWM(2, 4096, 0);
+        pwm.setPWM(1, 4096, 0);
+        pwm.setPWM(0, 4096, 0);
+        delay(500);
+        pwm.setPWM(4, 0, 4096);
+        pwm.setPWM(3, 0, 4096);
+        pwm.setPWM(2, 0, 4096);
+        pwm.setPWM(1, 0, 4096);
+        pwm.setPWM(0, 0, 4096);
+        delay(500);
+        pwm.setPWM(4, 0, 4096);
+        pwm.setPWM(3, 0, 4096);
+        pwm.setPWM(2, 0, 4096);
+        pwm.setPWM(1, 0, 4096);
+        pwm.setPWM(0, 0, 4096);
         return encoder0Pos;
+      }
     }
     
   }
@@ -412,61 +500,70 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   
-  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
-//  WiFi.begin("iPhone", "123456789");
-  yield();
-  for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
-    
-    delay(500);
-    Serial.print(".");
-    lcd.print(".");  
-    if (c == 30) {
-      
-      Serial.println();
-      Serial.println("Connection Time Out...");
-      Serial.println("Enter AP Mode...");
-      
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Time Out...");
-      lcd.setCursor(0, 1);
-      lcd.print("Enter AP Mode...");
-      
-      setup_wifi();
-      char data[100] = "";
-      data_setup(data);
-      emem.saveData(data);
+//  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
+////  WiFi.begin("iPhone", "123456789");
+//  yield();
+//  for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
+//    
+//    delay(500);
+//    Serial.print(".");
+//    lcd.print(".");  
+//    if (c == 30) {
+//      
+//      Serial.println();
+//      Serial.println("Connection Time Out...");
+//      Serial.println("Enter AP Mode...");
+//      
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("Time Out...");
+//      lcd.setCursor(0, 1);
+//      lcd.print("Enter AP Mode...");
+//      
+//      setup_wifi();
+//      char data[100] = "";
+//      data_setup(data);
+//      emem.saveData(data);
+//
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("Saving Data");
+//      lcd.setCursor(0, 1);
+//      lcd.print("Rebooting");
+//      
+//      for (int i = 0; i < 3; ++i)
+//      {
+//        Serial.print(".");
+//        lcd.setCursor(10, 1);
+//        lcd.print(".");
+//      }
+//      lcd.clear();
+//      ESP.reset();
+//    }
+//  }
+//
+//
+//  delay(1000);
+//  lcd.clear();
+//  
+//  Serial.println("connected");
+//
+//  lcd.setCursor(0, 0);
+//  lcd.print("Connected");
+//  delay(1000);
+//  
+//  strcpy(mqtt_server, emem.getMqttServer().c_str());
+//  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
+//  client.setCallback(callback);
 
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Saving Data");
-      lcd.setCursor(0, 1);
-      lcd.print("Rebooting");
-      
-      for (int i = 0; i < 3; ++i)
-      {
-        Serial.print(".");
-        lcd.setCursor(10, 1);
-        lcd.print(".");
-      }
-      lcd.clear();
-      ESP.reset();
-    }
-  }
 
-
-  delay(1000);
-  lcd.clear();
-  
-  Serial.println("connected");
-
-  lcd.setCursor(0, 0);
-  lcd.print("Connected");
-  delay(1000);
-  
-  strcpy(mqtt_server, emem.getMqttServer().c_str());
-  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
-  client.setCallback(callback);
+  pwm.begin();
+  pwm.setPWMFreq(1000);
+  pwm.setPWM(4,0, 4096);
+  pwm.setPWM(3,0, 4096);
+  pwm.setPWM(2,0, 4096);
+  pwm.setPWM(1,0, 4096);
+  pwm.setPWM(0,0, 4096);
 
   RequestRelayHotOn = "RqstHotON";
   RequestRelayHotOff = "RqstHotOFF";
@@ -508,13 +605,14 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   client.loop();
   delay(1000);
 
-  printCurrentDetails();
+//  printCurrentDetails();
   
   int temp_read1=0; //initialize the temp variable for the averages
   double samples[sampleLoop]={0};
   for (int i=0; i<sampleLoop; i++)//read sequential samples
   {
-   samples[i] = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;  //Measurement and calibration of TC input 
+   //samples[i] = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;  //Measurement and calibration of TC input 
+    samples[i] = thermoArray[thermoPin].readFarenheit();
   }
 
   for (int i=0; i<sampleLoop; i++) //average the sequential samples
@@ -536,6 +634,15 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   {
     TCError1=false;
   }
+
+ if(thermoPin == 3)
+ {
+  Serial.print("AmbientCJTemp(C):"); //MAX31855 Internal Cold junction temp reading (in C) (roughly ambient temp to the IC)
+  Serial.print(thermoArray[thermoPin].readInternal()); Serial.print(" "); //Read temp from TC controller internal cold junction  
+  Serial.print("AvgCurrentTCTemp(F): "); Serial.print(temp_read1); Serial.print(" "); //Display averaged TC temperature
+  Serial.print("RelayStatusHot: "); Serial.print(RelayStatus_1);Serial.print(" "); Serial.print("RelayStatusCold: "); Serial.print(RelayStatus_C); Serial.println(" "); //Dis[play the present status of the thermal control relay
+  return;
+ } 
  if (direct)
  { 
   runtimeH=millis(); //set runtime
@@ -683,25 +790,26 @@ double sampleTemp(int j)
 bool flag = false;
 String readString;
 
-void printCurrentDetails() {
-  while(Serial.available()) {
-    delay(3);
-    if (Serial.available() > 0) {
-      readString = Serial.readString();
-    }
-    Serial.print("Current Details: ");
-    Serial.println(readString);
-    Serial.println();
-    readString = "";
-  }
-}
+//void printCurrentDetails() {
+//  while(Serial.available()) {
+//    delay(3);
+//    if (Serial.available() > 0) {
+//      readString = Serial.readString();
+//    }
+//    Serial.print("Current Details: ");
+//    Serial.println(readString);
+//    Serial.println();
+//    readString = "";
+//  }
+//}
 
 
 void loop() {
-  if (!client.connected())
-    reconnect();
-
-  client.loop();
+  
+//  if (!client.connected())
+//    reconnect();
+//
+//  client.loop();
 
   
   x = analogRead(A0);
@@ -1010,12 +1118,14 @@ client.loop();
         {
           yield();
           currentMillis = millis();
-          
-          control(true, SX1509_RELAY_HEATER, 0);
-          Serial.println("DEBUGING................");
-          control(false, SX1509_RELAY_COOLER, 1);
 
-          
+          Serial.print("HEATER: ");
+          control(true, SX1509_RELAY_HEATER, 0);
+//          Serial.println("DEBUGING................");
+          Serial.print("COOLER: ");
+          control(false, SX1509_RELAY_COOLER, 1);
+          Serial.print("MIXER: ");
+          control(false, SX1509_RELAY_COOLER, 3);
           Serial.print("Current time: ");
           Serial.println(currentMillis);
           if (currentMillis - previousMillis >= 1800000)
