@@ -13,10 +13,11 @@
 #include <WiFiManager.h>
 #include <Wire.h>
 #include <ADE7953.h>
+#include <Button.h>
 
 //#define thresH 135
 //#define thresC 60
-#define sampleLoop 10
+#define sampleLoop 1
 /****************************SETUP FOR SX1509 GPIO EXTENDER*****************************/
 const byte SX1509_ADDRESS = 0x3E;
 
@@ -33,6 +34,13 @@ const byte SX1509_ADDRESS = 0x3E;
 #define SX1509_RELEASE_BUTTON 8
 #define SX1509_SOLENOID_HOT 9
 #define SX1509_SOLENOID_COLD 10
+
+
+#define RESET_WIFI_BUTTON 15        // D8
+#define RESET_MACHINE_BUTTON 3      // D9
+
+Button resetWifiButton = Button(15, PULLUP);
+Button resetButton = Button(16, PULLUP);
 /***************************************************************************************/
 
 #define heaterThreshold 145
@@ -48,7 +56,7 @@ const byte SX1509_ADDRESS = 0x3E;
 #define MAXCLK 2
 #define MAXCS0 14     // D5
 #define MAXCS1 12     // D6
-#define MAXCS2 15     // D8
+#define MAXCS2 13     // D7
 
 
 #define CURCS 15
@@ -432,9 +440,30 @@ int gcd (int a, int b) {
   return b;
 }
 
+//void ISR_Wifi_Reset()
+//{
+//  Serial.println("\nIn Wifi Reset Interrupt");
+//  delay(3000);
+//  yield();
+//  return;
+//}
+//
+//void ISR_Machine_Reset()
+//{
+//  Serial.println("\nIn Machine Reset Interrupt");
+//  delay(3000);
+//  yield();
+//  return;
+//}
+
 void setup() {
 
 
+//  pinMode(RESET_WIFI_BUTTON, INPUT_PULLUP);
+//  pinMode(RESET_MACHINE_BUTTON, INPUT_PULLUP);
+//  attachInterrupt(digitalPinToInterrupt(RESET_WIFI_BUTTON), ISR_Wifi_Reset, FALLING);
+//  attachInterrupt(digitalPinToInterrupt(RESET_MACHINE_BUTTON), ISR_Machine_Reset, FALLING);
+  
   if (!io.begin(SX1509_ADDRESS))
     while (1);
     
@@ -443,6 +472,8 @@ void setup() {
   io.pinMode(SX1509_MOTION0, INPUT);
   io.pinMode(SX1509_MOTION1, INPUT);
   io.pinMode(SX1509_MOTION2, INPUT);
+  io.pinMode(SX1509_RELEASE_BUTTON, INPUT);
+  io.digitalWrite(SX1509_RELEASE_BUTTON, HIGH);
   
   io.pinMode(encoder0Select, INPUT);
   io.digitalWrite(encoder0Select, HIGH);
@@ -500,61 +531,61 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   
-//  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
-////  WiFi.begin("iPhone", "123456789");
-//  yield();
-//  for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
-//    
-//    delay(500);
-//    Serial.print(".");
-//    lcd.print(".");  
-//    if (c == 30) {
-//      
-//      Serial.println();
-//      Serial.println("Connection Time Out...");
-//      Serial.println("Enter AP Mode...");
-//      
-//      lcd.clear();
-//      lcd.setCursor(0, 0);
-//      lcd.print("Time Out...");
-//      lcd.setCursor(0, 1);
-//      lcd.print("Enter AP Mode...");
-//      
-//      setup_wifi();
-//      char data[100] = "";
-//      data_setup(data);
-//      emem.saveData(data);
-//
-//      lcd.clear();
-//      lcd.setCursor(0, 0);
-//      lcd.print("Saving Data");
-//      lcd.setCursor(0, 1);
-//      lcd.print("Rebooting");
-//      
-//      for (int i = 0; i < 3; ++i)
-//      {
-//        Serial.print(".");
-//        lcd.setCursor(10, 1);
-//        lcd.print(".");
-//      }
-//      lcd.clear();
-//      ESP.reset();
-//    }
-//  }
-//
-//
-//  delay(1000);
-//  lcd.clear();
-//  
-//  Serial.println("connected");
-//
-//  lcd.setCursor(0, 0);
-//  lcd.print("Connected");
-//  delay(1000);
-//  
-//  strcpy(mqtt_server, emem.getMqttServer().c_str());
-//  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
-//  client.setCallback(callback);
+  WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
+//  WiFi.begin("iPhone", "123456789");
+  yield();
+  for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
+    
+    delay(500);
+    Serial.print(".");
+    lcd.print(".");  
+    if (c == 30) {
+      
+      Serial.println();
+      Serial.println("Connection Time Out...");
+      Serial.println("Enter AP Mode...");
+      
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Time Out...");
+      lcd.setCursor(0, 1);
+      lcd.print("Enter AP Mode...");
+      
+      setup_wifi();
+      char data[100] = "";
+      data_setup(data);
+      emem.saveData(data);
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Saving Data");
+      lcd.setCursor(0, 1);
+      lcd.print("Rebooting");
+      
+      for (int i = 0; i < 3; ++i)
+      {
+        Serial.print(".");
+        lcd.setCursor(10, 1);
+        lcd.print(".");
+      }
+      lcd.clear();
+      ESP.reset();
+    }
+  }
+
+
+  delay(1000);
+  lcd.clear();
+  
+  Serial.println("connected");
+
+  lcd.setCursor(0, 0);
+  lcd.print("Connected");
+  delay(1000);
+  
+  strcpy(mqtt_server, emem.getMqttServer().c_str());
+  client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
+  client.setCallback(callback);
 
 
   pwm.begin();
@@ -803,27 +834,90 @@ String readString;
 //  }
 //}
 
+bool sleep = false;
+bool operate = false;
+bool idle = true;
 
 void loop() {
   
-//  if (!client.connected())
-//    reconnect();
-//
-//  client.loop();
+  if (!client.connected())
+    reconnect();
 
-  
+  client.loop();
+
+
   x = analogRead(A0);
 
   while(millis() <= last + 20) {};
   
   last = millis();
   dis = 4800/(x-20);
-  
   bool mix = false;
-  if (flag || io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+
+  if (resetButton.uniquePress())
   {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Reset Button Pressed");
     
-    flag = false; 
+    int rst = 0;
+    while(resetButton.isPressed())
+    {
+      delay(1000);
+      rst++;
+      Serial.print("Reset Machine Button: ");
+      Serial.println(rst);
+      lcd.setCursor(0, 1);
+      lcd.print(rst);
+    }
+    
+    if (rst > 10)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Hard Reset");
+      Serial.println("HARD RESET");
+      delay(1000);
+    }
+    else if (5 < rst < 10)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Soft Reset");
+      Serial.println("SOFT RESET");
+      delay(1000);
+    }
+  }
+
+
+  if (resetWifiButton.uniquePress())
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Reset Wifi Pressed");
+    
+    int rst = 0;
+    while(resetWifiButton.isPressed())
+    {
+      delay(1000);
+      rst++;
+      Serial.print("Reset Wifi Button: ");
+      Serial.println(rst);
+      lcd.setCursor(0, 1);
+      lcd.print(rst);
+    }
+    if (rst >= 5)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Reset Network");
+      Serial.println("RESET NETWORK");
+      delay(1000);
+    }
+  }
+  
+  if (operate)
+  {
     Serial.println("Detect Motion");
 
     lcd.clear();
@@ -847,8 +941,23 @@ void loop() {
         delay(1000);
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("Sleep Mode");
-        break;
+        lcd.print("Idle Mode");
+        
+//        idle = true;
+//        operate = false;
+//        idle = false;
+//
+//        previousMillis = millis();
+//        
+//        return;
+
+
+        operate = false;
+        sleep = false;
+        idle = true;
+
+        previousMillis = millis();
+        return;
       }
     }
     if (!io.digitalRead(encoder0Select))
@@ -916,7 +1025,7 @@ void loop() {
             Serial.print("Current heater temp: ");
             Serial.println(heaterTemp);
           }
-client.loop();
+//          client.loop();
           Serial.println("Turn off Heater");
           snprintf (msg, 75, "RqstHotOFF", value);
           client.publish("topic/1", msg);
@@ -1004,11 +1113,16 @@ client.loop();
           lcd.print(".");
           if (i == 30)
           {
-            Serial.println("Time Out");
+            Serial.println("Time Out. Enter Idle Mode");
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print("Time out");
-            break;
+
+
+            idle = true;
+            operate = false;
+            sleep = false;
+            return;
           }
         }
 
@@ -1083,8 +1197,10 @@ client.loop();
         lcd.clear();
       }
     }
-  } 
-  else
+  }
+
+
+  if (idle)
   {
     Serial.println("No Motion Detected");
     
@@ -1092,104 +1208,70 @@ client.loop();
     lcd.setCursor(0, 0);
     lcd.print("No Motion");
     
-//    rtc.setTime(0, 0, 0, 6, 13, 01, 17);
-    while(true)
-    {
-      yield();
-//      delay(1000);
 
-      if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+    if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+    {
+      Serial.println("Motion Detected. Reset1111111111111");
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Detected Motion...");
+      delay(3000);
+      
+      operate = true;
+      idle = false;
+      sleep = false;
+
+      flag = true;
+//      previousMillis = millis();
+      return;
+    }
+    else
+    {
+      Serial.println("HERE");
+      
+      unsigned long currentMillis;
+      delay(1000);
+
+      currentMillis = millis();
+
+      Serial.print("HEATER: ");
+      control(true, SX1509_RELAY_HEATER, 0);
+      Serial.print("COOLER: ");
+      control(false, SX1509_RELAY_COOLER, 1);
+      Serial.print("MIXER: ");
+      control(false, SX1509_RELAY_COOLER, 3);
+      Serial.print("Current time: ");
+      Serial.println(currentMillis-previousMillis);
+
+      if (currentMillis - previousMillis >= 1800000)
       {
-        Serial.println("Motion Detected. Reset1111111111111");
+        Serial.println("Exceed 30 minutes. Turn Off");
+        Serial.println("TURN OFF EVERYTHING");
+
+        sleep = true;
+        operate = false;
+        idle = false;
+        
+        return;
+      }
+    }
+  }
+
+  if (sleep)
+  {
+    if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+    {
+        Serial.println("Motion Detected. Reset2222222222");
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Detected Motion...");
         delay(3000);
-        flag = true;
-        break;
-      }
-      else
-      {
-        Serial.println("HERE");
-        previousMillis = millis();
-        unsigned long currentMillis = previousMillis;
-        delay(1000);
-        while (true)
-        {
-          yield();
-          currentMillis = millis();
-
-          Serial.print("HEATER: ");
-          control(true, SX1509_RELAY_HEATER, 0);
-//          Serial.println("DEBUGING................");
-          Serial.print("COOLER: ");
-          control(false, SX1509_RELAY_COOLER, 1);
-          Serial.print("MIXER: ");
-          control(false, SX1509_RELAY_COOLER, 3);
-          Serial.print("Current time: ");
-          Serial.println(currentMillis);
-          if (currentMillis - previousMillis >= 1800000)
-          {
-            Serial.println("Exceed 30 minutes. Turn Off");
-            Serial.println("TURN OFF EVERYTHING");
-            while(true)
-            {
-              yield();
-              if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
-              {
-                Serial.println("Motion Detected. Reset2222222222");
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("Detected Motion...");
-                delay(3000);
-                flag = true;
-                return;
-              }             
-            }
-//            break;
-          }
-          if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
-          {
-            Serial.println("Motion Detected. Reset2222222222");
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("Detected Motion...");
-            delay(3000);
-            flag = true;
-            return;
-          }
-        }
-//        rtc.readTime( & second, & minute, & hour, & dayOfWeek, & dayOfMonth, & month, & year);
-//        int t = second + +60 * minute + 3600 * hour;
-//        Serial.print(t);
-//        Serial.print(" s\n");
-//        if (t >= 10)
-//        {
-//          Serial.println("Exceed 30 minutes");
-//          Serial.println("Turn off heater and cooler");
-//
-//          heaterTemp = sampleTemp(0);
-//          coolerTemp = sampleTemp(1);
-//          
-//          if (heaterTemp < heaterThreshold)
-//          {
-//            Serial.println("Turn on heater");
-//          }
-//          else
-//          {
-//            Serial.println("Turn off heater");
-//          }
-//
-//          if (coolerTemp > coolerThreshold)
-//          {
-//            Serial.println("Turn on cooler");
-//          }
-//          else
-//          {
-//            Serial.println("Turn off cooler");
-//          }
-//        }
-      }
+        
+        operate = true;
+        sleep = false;
+        idle = false;
+        
+        return;
     }
   }
 }
