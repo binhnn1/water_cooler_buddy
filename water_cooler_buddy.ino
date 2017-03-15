@@ -36,22 +36,16 @@ const byte SX1509_ADDRESS = 0x3E;
 #define SX1509_SOLENOID_COLD 10
 
 
-#define RESET_WIFI_BUTTON 15        // D8
-#define RESET_MACHINE_BUTTON 3      // D9
+#define RESET_WIFI_BUTTON 15         // D8
+#define RESET_MACHINE_BUTTON 16      // D0
 
-Button resetWifiButton = Button(15, PULLUP);
-Button resetButton = Button(16, PULLUP);
+Button resetWifiButton = Button(RESET_WIFI_BUTTON, PULLUP);
+Button resetButton = Button(RESET_MACHINE_BUTTON, PULLUP);
 /***************************************************************************************/
 
 #define heaterThreshold 145
 #define coolerThreshold 55
 /********************************SETUP FOR THERMOCOUPLES********************************/
-//#define MAXDO 0
-//#define MAXCLK 2
-//#define MAXCS0 3      // D4
-//#define MAXCS1 16     // D8
-//#define MAXCS2 16 
-
 #define MAXDO 0
 #define MAXCLK 2
 #define MAXCS0 14     // D5
@@ -60,11 +54,6 @@ Button resetButton = Button(16, PULLUP);
 
 
 #define CURCS 15
-
-//#define MAXCS0 16   //D0
-//#define MAXCS1 0    // D3
-//#define MAXCS2 16 
-//
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
@@ -440,30 +429,10 @@ int gcd (int a, int b) {
   return b;
 }
 
-//void ISR_Wifi_Reset()
-//{
-//  Serial.println("\nIn Wifi Reset Interrupt");
-//  delay(3000);
-//  yield();
-//  return;
-//}
-//
-//void ISR_Machine_Reset()
-//{
-//  Serial.println("\nIn Machine Reset Interrupt");
-//  delay(3000);
-//  yield();
-//  return;
-//}
-
-void setup() {
 
 
-//  pinMode(RESET_WIFI_BUTTON, INPUT_PULLUP);
-//  pinMode(RESET_MACHINE_BUTTON, INPUT_PULLUP);
-//  attachInterrupt(digitalPinToInterrupt(RESET_WIFI_BUTTON), ISR_Wifi_Reset, FALLING);
-//  attachInterrupt(digitalPinToInterrupt(RESET_MACHINE_BUTTON), ISR_Machine_Reset, FALLING);
-  
+void setup() 
+{
   if (!io.begin(SX1509_ADDRESS))
     while (1);
     
@@ -605,7 +574,6 @@ void setup() {
   SPI.begin();
   delay(200);
   myADE7953.initialize();
-//  yield(/);
 }
 
 
@@ -756,50 +724,6 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   Serial.print("AvgCurrentTCTemp(F): "); Serial.print(temp_read1); Serial.print(" "); //Display averaged TC temperature
   Serial.print("RelayStatusHot: "); Serial.print(RelayStatus_1);Serial.print(" "); Serial.print("RelayStatusCold: "); Serial.print(RelayStatus_C); Serial.println(" "); //Dis[play the present status of the thermal control relay
 //  Serial.print("TimeFromLastToPresentSwitchState(proportional ms): "); Serial.print(lastswitcheventtime); Serial.print(" "); Serial.print("TotalRuntime(ms): "); Serial.println(runtime);
-
-  
-//  long apnoload, activeEnergyA;
-//  float vRMS, iRMSA, powerFactorA, apparentPowerA, reactivePowerA, activePowerA;
-//
-//  apnoload = myADE7953.getAPNOLOAD();
-//  Serial.print("APNOLOAD (hex): ");
-//  Serial.println(apnoload, HEX);
-//  delay(200); 
-//
-//  vRMS = myADE7953.getVrms();  
-//  Serial.print("Vrms (V): ");
-//  Serial.println(vRMS);
-//  delay(200);
-//
-//  iRMSA = myADE7953.getIrmsA();  
-//  Serial.print("IrmsA (mA): ");
-//  Serial.println(iRMSA);
-//  delay(200);
-//
-//  apparentPowerA = myADE7953.getInstApparentPowerA();  
-//  Serial.print("Apparent Power A (mW): ");
-//  Serial.println(apparentPowerA);
-//  delay(200);
-//
-//  activePowerA = myADE7953.getInstActivePowerA();  
-//  Serial.print("Active Power A (mW): ");
-//  Serial.println(activePowerA);
-//  delay(200);
-//
-//  reactivePowerA = myADE7953.getInstReactivePowerA();  
-//  Serial.print("Rective Power A (mW): ");
-//  Serial.println(reactivePowerA);
-//  delay(200);
-//
-//  powerFactorA = myADE7953.getPowerFactorA();  
-//  Serial.print("Power Factor A (x100): ");
-//  Serial.println(powerFactorA);
-//  delay(200);
-//
-//  activeEnergyA = myADE7953.getActiveEnergyA();  
-//  Serial.print("Active Energy A (hex): ");
-//  Serial.println(activeEnergyA);
-//  delay(200);
 }
 
 double sampleTemp(int j)
@@ -824,15 +748,13 @@ void printCurrentDetails() {
   Wire.requestFrom(8, 50);    // request 6 bytes from slave device #8
 
   Serial.println();
-  Serial.print("Current Details: ");
+  Serial.println("Current Details: ");
   int count = 0;
   char data[50] = "";
   while (Wire.available()) { // slave may send less than requested
     char c = (Wire.read()); // receive a byte as character
     strncat(data, &c, 1);
   }
-//  Serial.println();
-//  Serial.println(data);
 
   char* pch;
   count = 0;
@@ -840,11 +762,13 @@ void printCurrentDetails() {
   while (pch != NULL) {
     ++count;
     switch(count) {
-        case 1: Serial.print("Data 1: "); Serial.println(pch); break;
-        case 2: Serial.print("Data 2: "); Serial.println(pch); break;
-        case 3: Serial.print("Data 3: "); Serial.println(pch); break;
-        case 4: Serial.print("Data 4: "); Serial.println(pch); break;
-        case 5: Serial.print("Data 5: "); Serial.println(pch); break;
+        case 1: Serial.print("IrmsA (mA): "); Serial.println(pch); break;
+        case 2: Serial.print("Vrms (V): "); Serial.println(pch); break;
+        case 3: Serial.print("Apparent Power A (mW): "); Serial.println(pch); break;
+        case 4: Serial.print("Active Power A (mW): "); Serial.println(pch); break;
+        case 5: Serial.print("Rective Power A (mW): "); Serial.println(pch); break;
+//        case 6: Serial.print("Power Factor A (x100): "); Serial.println(pch); break;
+//        case 7: Serial.print("Active Energy A (hex): "); Serial.println(pch); break;
     }
     pch = strtok(NULL, "#");
   }
