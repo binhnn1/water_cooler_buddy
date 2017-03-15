@@ -636,7 +636,6 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   client.loop();
   delay(1000);
 
-//  printCurrentDetails();
   
   int temp_read1=0; //initialize the temp variable for the averages
   double samples[sampleLoop]={0};
@@ -821,18 +820,36 @@ double sampleTemp(int j)
 bool flag = false;
 String readString;
 
-//void printCurrentDetails() {
-//  while(Serial.available()) {
-//    delay(3);
-//    if (Serial.available() > 0) {
-//      readString = Serial.readString();
-//    }
-//    Serial.print("Current Details: ");
-//    Serial.println(readString);
-//    Serial.println();
-//    readString = "";
-//  }
-//}
+void printCurrentDetails() {
+  Wire.requestFrom(8, 50);    // request 6 bytes from slave device #8
+
+  Serial.println();
+  Serial.print("Current Details: ");
+  int count = 0;
+  char data[50] = "";
+  while (Wire.available()) { // slave may send less than requested
+    char c = (Wire.read()); // receive a byte as character
+    strncat(data, &c, 1);
+  }
+//  Serial.println();
+//  Serial.println(data);
+
+  char* pch;
+  count = 0;
+  pch = strtok(data, "#");
+  while (pch != NULL) {
+    ++count;
+    switch(count) {
+        case 1: Serial.print("Data 1: "); Serial.println(pch); break;
+        case 2: Serial.print("Data 2: "); Serial.println(pch); break;
+        case 3: Serial.print("Data 3: "); Serial.println(pch); break;
+        case 4: Serial.print("Data 4: "); Serial.println(pch); break;
+        case 5: Serial.print("Data 5: "); Serial.println(pch); break;
+    }
+    pch = strtok(NULL, "#");
+  }
+  //delay(2000);
+}
 
 bool sleep = false;
 bool operate = false;
@@ -1234,6 +1251,7 @@ void loop() {
 
       currentMillis = millis();
 
+      printCurrentDetails();
       Serial.print("HEATER: ");
       control(true, SX1509_RELAY_HEATER, 0);
       Serial.print("COOLER: ");
