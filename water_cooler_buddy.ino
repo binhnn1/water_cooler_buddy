@@ -17,7 +17,7 @@
 
 //#define thresH 135
 //#define thresC 60
-#define sampleLoop 1
+#define sampleLoop 10
 /****************************SETUP FOR SX1509 GPIO EXTENDER*****************************/
 const byte SX1509_ADDRESS = 0x3E;
 
@@ -36,8 +36,8 @@ const byte SX1509_ADDRESS = 0x3E;
 #define SX1509_SOLENOID_COLD 10
 
 
-#define RESET_WIFI_BUTTON 15         // D8
-#define RESET_MACHINE_BUTTON 16      // D0
+#define RESET_WIFI_BUTTON 15        // D8
+#define RESET_MACHINE_BUTTON 16      // D9
 
 Button resetWifiButton = Button(RESET_WIFI_BUTTON, PULLUP);
 Button resetButton = Button(RESET_MACHINE_BUTTON, PULLUP);
@@ -95,20 +95,21 @@ WiFiManager wifiManager;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+double heaterTemp, coolerTemp, mixTemp;
 
 char msg[50];
 int value = 0;
 int a = 0;
 /***************************************************************************************/
-void printAnalog(boolean readStop){
-  if(readStop){
-    char messageBuff[100];
-    String temp = String(analogRead(A0),DEC);
-    //snprintf (msg, 75, temp, value);
-    temp.toCharArray(messageBuff,temp.length()+1);
-    client.publish("topic/2", messageBuff);
-  }
-}
+//void printAnalog(boolean readStop){
+//  if(readStop){
+//    char messageBuff[100];
+//    String temp = String(analogRead(A0),DEC);
+//    //snprintf (msg, 75, temp, value);
+//    temp.toCharArray(messageBuff,temp.length()+1);
+//    client.publish("topic/2", messageBuff);
+//  }
+//}
 /***************************************************************************************/
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
@@ -297,15 +298,15 @@ int selectTemp()
       {
         if (io.digitalRead(encoder0PinB) == LOW)
         {
-          encoder0Pos-=10;
+          encoder0Pos-=5;
         }
         else
         {
-          encoder0Pos+=10;
+          encoder0Pos+=5;
         }
-        if(encoder0Pos >= 160)
+        if(encoder0Pos >= heaterTemp)
         {
-          encoder0Pos = 160;
+          encoder0Pos = heaterTemp;
           pwm.setPWM(1,4096, 0);
           pwm.setPWM(0,4096, 0);
           delay(500);   
@@ -315,9 +316,9 @@ int selectTemp()
           pwm.setPWM(1,4096, 0);
           pwm.setPWM(0,4096, 0);
         }
-        else if(encoder0Pos <= 50)
+        else if(encoder0Pos <= coolerTemp)
         {
-          encoder0Pos = 50;
+          encoder0Pos = coolerTemp;
           pwm.setPWM(4,4096, 0);
           pwm.setPWM(3,4096, 0);
           delay(500);   
@@ -462,7 +463,7 @@ void setup()
 //  pinMode(3, FUNC_GPIO3);
 //  pinMode(13, FUNC_GPIO13)
 
-  Serial.begin (9600);
+  Serial.begin (115200);
   Serial.println("\nstart");
   
 
@@ -578,7 +579,6 @@ void setup()
 
 
 
-double heaterTemp, coolerTemp, mixTemp;
 
 //Thermocouple calibration constants
 #define TC1_gain 0.988 //Thermocouple correction gain
@@ -859,11 +859,22 @@ void loop() {
   
   if (operate)
   {
+
+
+
+
     Serial.println("Detect Motion");
 
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Detect Motion");
+
+    Serial.print("HEATER: ");
+    control(true, SX1509_RELAY_HEATER, 0);
+    Serial.print("COOLER: ");
+    control(false, SX1509_RELAY_COOLER, 1);
+    Serial.print("MIXER: ");
+    control(false, SX1509_RELAY_COOLER, 3);
 
     int i = 0;
     while (io.digitalRead(encoder0Select))
@@ -904,6 +915,9 @@ void loop() {
     if (!io.digitalRead(encoder0Select))
     {
       Serial.println("Please Select Desired Temperature");
+
+      heaterTemp = sampleTemp(0);
+      coolerTemp = sampleTemp(1);
       
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -943,75 +957,75 @@ void loop() {
         bool c;
         int stopPoint, diff;
         int hotPortion, coldPortion;
-        if (inputTemp > heaterTemp)
+        if (inputTemp >= heaterTemp)
         {
           choice = 1;
-          Serial.println("Turn on Heater");
-          snprintf (msg, 75, "RqstHotON", value);
-          client.publish("topic/1", msg);
+//          Serial.println("Turn on Heater");
+//          snprintf (msg, 75, "RqstHotON", value);
+//          client.publish("topic/1", msg);
 //          delay(1000);
 //          client.loop();
 //          io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
 //          lcd.clear();
 //          lcd.setCursor(0, 0);
 //          lcd.print("Heater: ON");
-          
-          while(heaterTemp < inputTemp)
-          {
-
-            yield();
-            delay(1000);
-            client.loop();
-            heaterTemp = sampleTemp(0);
-            Serial.print("Current heater temp: ");
-            Serial.println(heaterTemp);
-          }
+//          
+//          while(heaterTemp < inputTemp)
+//          {
+//
+//            yield();
+//            delay(1000);
+//            client.loop();
+//            heaterTemp = sampleTemp(0);
+//            Serial.print("Current heater temp: ");
+//            Serial.println(heaterTemp);
+//          }
+////          client.loop();
+//          Serial.println("Turn off Heater");
+//          snprintf (msg, 75, "RqstHotOFF", value);
+//          client.publish("topic/1", msg);
+//          delay(1000);
 //          client.loop();
-          Serial.println("Turn off Heater");
-          snprintf (msg, 75, "RqstHotOFF", value);
-          client.publish("topic/1", msg);
-          delay(1000);
-          client.loop();
-          delay(1000);
-//          io.digitalWrite(SX1509_RELAY_HEATER, LOW);
-          
-//          lcd.clear();
-//          lcd.setCursor(0, 0);
-//          lcd.print("Heater: OFF");
-          
+//          delay(1000);
+////          io.digitalWrite(SX1509_RELAY_HEATER, LOW);
+//          
+////          lcd.clear();
+////          lcd.setCursor(0, 0);
+////          lcd.print("Heater: OFF");
+//          
         }
         else if (inputTemp < coolerTemp)
         {
           choice = 2;
-          Serial.println("Turn on Cooler");
-          snprintf (msg, 75, "RqstColdON", value);
-          client.publish("topic/1", msg);
-//          delay(5000);
+//          Serial.println("Turn on Cooler");
+//          snprintf (msg, 75, "RqstColdON", value);
+//          client.publish("topic/1", msg);
+////          delay(5000);
+////          client.loop();
+////          io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
+////          lcd.clear();
+////          lcd.setCursor(0, 0);
+////          lcd.print("Cooler: ON");
+//          
+//          while(coolerTemp > inputTemp)
+//          {
+//            yield();
+//            delay(1000);
+//            client.loop();
+//            coolerTemp = sampleTemp(1);
+//            Serial.print("Current cooler temp: ");
+//            Serial.println(coolerTemp);
+//          }
+//          Serial.println("Turn off Cooler");
+//          snprintf (msg, 75, "RqstColdOFF", value);
+//          client.publish("topic/1", msg);
+//          delay(1000);
 //          client.loop();
-//          io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
-//          lcd.clear();
-//          lcd.setCursor(0, 0);
-//          lcd.print("Cooler: ON");
-          
-          while(coolerTemp > inputTemp)
-          {
-            yield();
-            delay(1000);
-            client.loop();
-            coolerTemp = sampleTemp(1);
-            Serial.print("Current cooler temp: ");
-            Serial.println(coolerTemp);
-          }
-          Serial.println("Turn off Cooler");
-          snprintf (msg, 75, "RqstColdOFF", value);
-          client.publish("topic/1", msg);
-          delay(1000);
-          client.loop();
-          delay(1000);
-//          io.digitalWrite(SX1509_RELAY_COOLER, LOW);
-//          lcd.clear();
-//          lcd.setCursor(0, 0);
-//          lcd.print("Cooler: OFF");
+//          delay(1000);
+////          io.digitalWrite(SX1509_RELAY_COOLER, LOW);
+////          lcd.clear();
+////          lcd.setCursor(0, 0);
+////          lcd.print("Cooler: OFF");
         }
         else
         {
@@ -1150,7 +1164,7 @@ void loop() {
     lcd.print("No Motion");
     
 
-    if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+    if (0 < dis < 30 || io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
     {
       Serial.println("Motion Detected. Reset1111111111111");
       lcd.clear();
@@ -1190,6 +1204,12 @@ void loop() {
         Serial.println("Exceed 30 minutes. Turn Off");
         Serial.println("TURN OFF EVERYTHING");
 
+        snprintf (msg, 75, "RqstHotOFF", value);
+        client.publish("topic/1", msg);
+
+        snprintf (msg, 75, "RqstColdOFF", value);
+        client.publish("topic/1", msg);
+        
         sleep = true;
         operate = false;
         idle = false;
@@ -1201,7 +1221,7 @@ void loop() {
 
   if (sleep)
   {
-    if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+    if (0 < dis < 30 || io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
     {
         Serial.println("Motion Detected. Reset2222222222");
         lcd.clear();
