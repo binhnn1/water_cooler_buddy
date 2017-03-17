@@ -14,7 +14,13 @@
 #include <Wire.h>
 #include <ADE7953.h>
 #include <Button.h>
-
+unsigned long lastTime = 0;
+unsigned long currentTime = 0;
+float lastEnergy = 0;
+float currentEnergy = 0;
+const char* host = "52.53.184.247";
+const int httpPort = 8080;
+String url = "/Test/page1";
 //#define thresH 135
 //#define thresC 60
 #define sampleLoop 10
@@ -575,6 +581,29 @@ void setup()
   SPI.begin();
   delay(200);
   myADE7953.initialize();
+
+  WiFiClient client;
+  if (!client.connect(host, httpPort)) {
+    Serial.println("connection failed");
+    return;
+  }
+
+  client.print(String("POST ") + url + "?energy=setup" + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" + 
+               "Connection: close\r\n\r\n");
+  delay(10);
+
+  Serial.print("Setup Respond:");
+  int c = 0;
+  while(client.available()){
+    String line = client.readStringUntil('\r');
+    ++c;
+    if (c >= 8 ) {
+      Serial.print(line);
+      lastEnergy = line.toFloat();
+    }
+  }
+  
 }
 
 
@@ -744,35 +773,75 @@ double sampleTemp(int j)
 bool flag = false;
 String readString;
 
+
 void printCurrentDetails() {
-  Wire.requestFrom(8, 50);    // request 6 bytes from slave device #8
+  currentTime = millis();
+  unsigned long interval = currentTime - lastTime;
+  lastTime = currentTime;
+  
+  Wire.requestFrom(8, 100);    // request 6 bytes from slave device #8
+
 
   Serial.println();
   Serial.println("Current Details: ");
   int count = 0;
-  char data[50] = "";
+  char data[20] = "";
   while (Wire.available()) { // slave may send less than requested
     char c = (Wire.read()); // receive a byte as character
+    if(c == '#')
+      break;
     strncat(data, &c, 1);
   }
+  Serial.println(data);
 
-  char* pch;
-  count = 0;
-  pch = strtok(data, "#");
-  while (pch != NULL) {
-    ++count;
-    switch(count) {
-        case 1: Serial.print("IrmsA (mA): "); Serial.println(pch); break;
-        case 2: Serial.print("Vrms (V): "); Serial.println(pch); break;
-        case 3: Serial.print("Apparent Power A (mW): "); Serial.println(pch); break;
-        case 4: Serial.print("Active Power A (mW): "); Serial.println(pch); break;
-        case 5: Serial.print("Rective Power A (mW): "); Serial.println(pch); break;
-//        case 6: Serial.print("Power Factor A (x100): "); Serial.println(pch); break;
-//        case 7: Serial.print("Active Energy A (hex): "); Serial.println(pch); break;
-    }
-    pch = strtok(NULL, "#");
+//  char* pch;
+//  count = 0;
+//  pch = strtok(data, "#");
+//  float activePower;
+//  while (pch != NULL) {
+//    ++count;
+//    switch(count) {
+//        case 1: Serial.print("IrmsA (mA): "); Serial.println(pch); break;
+//        case 2: Serial.print("Vrms (V): "); Serial.println(pch); break;
+//        case 3: Serial.print("Apparent Power A (mW): "); Serial.println(pch); break;
+//        case 4: Serial.print("Active Power A (mW): "); Serial.println(pch); activePower = atof(pch); break;
+//        case 5: Serial.print("Reactive Power A (mW): "); Serial.println(pch); break;
+////        case 6: Serial.print("Power Factor A (x100): "); Serial.println(pch); break;
+////        case 7: Serial.print("Active Energy A (hex): "); Serial.println(pch); break;
+//    }
+//    pch = strtok(NULL, "#");
+//  }
+
+  float activePower = atof(data);
+  Serial.print("Interval: "); Serial.println(interval/1000);
+  Serial.print("Last Energy: "); Serial.println(lastEnergy);
+  currentEnergy = activePower*(interval/1000)/3600 + lastEnergy;
+  lastEnergy = currentEnergy;
+  Serial.print("Energy Consumed: ");
+  Serial.println(currentEnergy);
+
+  WiFiClient client;
+  if (!client.connect(host, httpPort)) {
+    Serial.println("connection failed");
+    return;
   }
-  //delay(2000);
+
+  client.print(String("POST ") + url + "?energy=" + currentEnergy + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" + 
+               "Connection: close\r\n\r\n");
+  delay(10);
+
+  Serial.println("Respond:");
+  int c = 0;
+  while(client.available()){
+    String line = client.readStringUntil('\r');
+    ++c;
+    if (c >= 8 )
+      Serial.print(line);
+  }
+  
+  
+  Serial.println();
 }
 
 bool sleep = false;
@@ -786,6 +855,8 @@ void loop() {
 
   client.loop();
 
+
+  printCurrentDetails();
 
   x = analogRead(A0);
 
@@ -1189,7 +1260,7 @@ void loop() {
 
       currentMillis = millis();
 
-      printCurrentDetails();
+      
       Serial.print("HEATER: ");
       control(true, SX1509_RELAY_HEATER, 0);
       Serial.print("COOLER: ");
