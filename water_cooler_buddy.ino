@@ -440,9 +440,18 @@ int gcd (int a, int b) {
 
 void setup() 
 {
-  if (!io.begin(SX1509_ADDRESS))
-    while (1);
-    
+
+  
+  Serial.begin (115200);
+  Serial.println("\nstart");
+  
+  Serial.print("Connecting to SX1509");
+  while (!io.begin(SX1509_ADDRESS)) {
+    yield();
+    Serial.print(".");
+  }
+
+  Serial.println();
   io.pinMode(SX1509_RELAY_HEATER, OUTPUT);
   io.pinMode(SX1509_RELAY_COOLER, OUTPUT);
   io.pinMode(SX1509_MOTION0, INPUT);
@@ -469,8 +478,6 @@ void setup()
 //  pinMode(3, FUNC_GPIO3);
 //  pinMode(13, FUNC_GPIO13)
 
-  Serial.begin (115200);
-  Serial.println("\nstart");
   
 
 
@@ -647,6 +654,11 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   temp_read1=samples[i]+temp_read1;
   }
   temp_read1=temp_read1/(double)sampleLoop;
+
+  if (temp_read1 < 0 || temp_read1 > 1000)
+  {
+    return;
+  }
   
   if(isnan(temp_read1)) //check for NAN, if this is not done, if the TC messes up, the controller can stick on!
   {
@@ -661,7 +673,7 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   {
     TCError1=false;
   }
-
+  
  if(thermoPin == 3)
  {
   Serial.print("AmbientCJTemp(C):"); //MAX31855 Internal Cold junction temp reading (in C) (roughly ambient temp to the IC)
@@ -856,7 +868,7 @@ void loop() {
   client.loop();
 
 
-  printCurrentDetails();
+//  printCurrentDetails();
 
   x = analogRead(A0);
 
@@ -931,14 +943,11 @@ void loop() {
   if (operate)
   {
 
-
-
-
-    Serial.println("Detect Motion");
+    Serial.println("Operating Mode");
 
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Detect Motion");
+    lcd.print("Operating Mode");
 
     Serial.print("HEATER: ");
     control(true, SX1509_RELAY_HEATER, 0);
@@ -1235,13 +1244,13 @@ void loop() {
     lcd.print("No Motion");
     
 
-    if (0 < dis < 30 || io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+    if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
     {
       Serial.println("Motion Detected. Reset1111111111111");
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Detected Motion...");
-      delay(3000);
+      delay(2000);
       
       operate = true;
       idle = false;
@@ -1292,13 +1301,13 @@ void loop() {
 
   if (sleep)
   {
-    if (0 < dis < 30 || io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+    if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
     {
         Serial.println("Motion Detected. Reset2222222222");
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Detected Motion...");
-        delay(3000);
+        delay(2000);
         
         operate = true;
         sleep = false;
