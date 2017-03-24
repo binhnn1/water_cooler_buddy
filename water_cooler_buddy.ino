@@ -689,10 +689,17 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   
   int temp_read1=0; //initialize the temp variable for the averages
   double samples[sampleLoop]={0};
-  for (int i=0; i<sampleLoop; i++)//read sequential samples
+  
+  for (int i=0; i<sampleLoop;)//read sequential samples
   {
-   //samples[i] = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;  //Measurement and calibration of TC input 
-    samples[i] = thermoArray[thermoPin].readFarenheit();
+    double readTemp = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;
+    if (!isnan(readTemp))
+    {
+      samples[i] =  readTemp; //Measurement and calibration of TC input 
+      ++i;
+    }
+    
+//    samples[i] = thermoArray[thermoPin].readFarenheit();
   }
 
   for (int i=0; i<sampleLoop; i++) //average the sequential samples
@@ -701,10 +708,6 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   }
   temp_read1=temp_read1/(double)sampleLoop;
 
-  if (temp_read1 < 0 || temp_read1 > 1000)
-  {
-    return;
-  }
   
   if(isnan(temp_read1)) //check for NAN, if this is not done, if the TC messes up, the controller can stick on!
   {
