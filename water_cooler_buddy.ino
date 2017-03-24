@@ -381,10 +381,19 @@ int selectTemp()
         }
         Serial.println(encoder0Pos, DEC);
 
-        lcd.clear();
+//        lcd.clear();
         lcd.setCursor(0, 1);
         lcd.print(encoder0Pos);
-        
+        if(encoder0Pos < 100)
+        {
+          lcd.setCursor(3, 1);
+          lcd.print("degree F");        
+        }
+        else
+        {
+          lcd.setCursor(4, 1);
+          lcd.print("degree F");          
+        }
       }
 
       if (currentMillis - previousMillis >= 30000)
@@ -436,6 +445,43 @@ int gcd (int a, int b) {
   return b;
 }
 
+
+bool detectMotion()
+{
+    if (io.digitalRead(SX1509_MOTION0))
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Detected Motion:");
+      lcd.setCursor(0, 1);
+      lcd.print("Front");
+      delay(2000);
+      return true;
+    }
+
+    if (io.digitalRead(SX1509_MOTION1))
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Detected Motion:");
+      lcd.setCursor(0, 1);
+      lcd.print("Front");
+      delay(2000);
+      return true;
+    }
+
+    if (io.digitalRead(SX1509_MOTION2))
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Detected Motion:");
+      lcd.setCursor(0, 1);
+      lcd.print("Front");
+      delay(2000);
+      return true;
+    }
+    return false;
+}
 
 
 void setup() 
@@ -949,13 +995,7 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print("Operating Mode");
 
-    Serial.print("HEATER: ");
-    control(true, SX1509_RELAY_HEATER, 0);
-    Serial.print("COOLER: ");
-    control(false, SX1509_RELAY_COOLER, 1);
-    Serial.print("MIXER: ");
-    control(false, SX1509_RELAY_COOLER, 3);
-
+    lcd.setCursor(0, 1);
     int i = 0;
     while (io.digitalRead(encoder0Select))
     {
@@ -966,14 +1006,14 @@ void loop() {
       lcd.print(".");
       if (i == 30)
       {
-        Serial.println("\nFalse Motion");
+        Serial.println("\nFalse Motion. Enter Idle Mode");
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("False Motion");
         delay(1000);
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("Idle Mode");
+        lcd.print("Back To Idle");
         
 //        idle = true;
 //        operate = false;
@@ -994,21 +1034,24 @@ void loop() {
     }
     if (!io.digitalRead(encoder0Select))
     {
-      Serial.println("Please Select Desired Temperature");
+      Serial.println("Select Temperature");
 
       heaterTemp = sampleTemp(0);
       coolerTemp = sampleTemp(1);
+      
+      Serial.print("Heater: "); Serial.println(heaterTemp);
+      Serial.print("Cooer: "); Serial.println(coolerTemp);
       
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Select Temp:");
       
-      for(int i = 0; i < 3; ++i)
-      {
-        Serial.print(".");
-        lcd.print(".");
-        delay(1000);
-      }
+//      for(int i = 0; i < 3; ++i)
+//      {
+//        Serial.print(".");
+//        lcd.print(".");
+//        delay(1000);
+//      }
       int inputTemp = selectTemp();
       while(inputTemp < 0) {
         yield();
@@ -1022,6 +1065,16 @@ void loop() {
       lcd.print("Selected Temperature:");
       lcd.setCursor(0, 1);
       lcd.print(inputTemp);
+      if (inputTemp < 100)
+      {
+        lcd.setCursor(3 ,1);
+        lcd.print("degree F");
+      }
+      else
+      {
+        lcd.setCursor(4 ,1);
+        lcd.print("degree F"); 
+      }
       
       mix = true;
 
@@ -1237,27 +1290,28 @@ void loop() {
 
   if (idle)
   {
-    Serial.println("No Motion Detected");
+    Serial.println("Standby Mode");
     
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("No Motion");
+    lcd.print("Standby Mode");
+    
+    Serial.print("HEATER: ");
+    control(true, SX1509_RELAY_HEATER, 0);
+    Serial.print("COOLER: ");
+    control(false, SX1509_RELAY_COOLER, 1);
+    Serial.print("MIXER: ");
+    control(false, SX1509_RELAY_COOLER, 3);
     
 
-    if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+    if(detectMotion())
     {
-      Serial.println("Motion Detected. Reset1111111111111");
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Detected Motion...");
-      delay(2000);
-      
+      Serial.println("Motion Detected. Reset1111111111111");      
       operate = true;
       idle = false;
       sleep = false;
 
       flag = true;
-//      previousMillis = millis();
       return;
     }
     else
@@ -1268,14 +1322,7 @@ void loop() {
       delay(1000);
 
       currentMillis = millis();
-
       
-      Serial.print("HEATER: ");
-      control(true, SX1509_RELAY_HEATER, 0);
-      Serial.print("COOLER: ");
-      control(false, SX1509_RELAY_COOLER, 1);
-      Serial.print("MIXER: ");
-      control(false, SX1509_RELAY_COOLER, 3);
       Serial.print("Current time: ");
       Serial.println(currentMillis-previousMillis);
 
@@ -1301,19 +1348,29 @@ void loop() {
 
   if (sleep)
   {
-    if (io.digitalRead(SX1509_MOTION0) || io.digitalRead(SX1509_MOTION1) || io.digitalRead(SX1509_MOTION2))
+
+    Serial.println("Sleep Mode");
+  
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Sleep Mode");
+    
+    if(detectMotion())
     {
-        Serial.println("Motion Detected. Reset2222222222");
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Detected Motion...");
-        delay(2000);
-        
-        operate = true;
-        sleep = false;
-        idle = false;
-        
-        return;
+      Serial.println("Motion Detected. Reset2222222222");
+      
+      Serial.print("HEATER: ");
+      control(true, SX1509_RELAY_HEATER, 0);
+      Serial.print("COOLER: ");
+      control(false, SX1509_RELAY_COOLER, 1);
+      Serial.print("MIXER: ");
+      control(false, SX1509_RELAY_COOLER, 3);
+
+      operate = true;
+      sleep = false;
+      idle = false;
+     
+      return;
     }
   }
 }
