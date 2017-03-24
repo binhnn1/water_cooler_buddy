@@ -290,7 +290,9 @@ int n = LOW;
 unsigned long previousMillis = 0;
 
 int selectTemp()
-{  
+{ 
+  heaterTemp = sampleTemp(0);
+  coolerTemp = sampleTemp(1); 
   while(true)
   {
     yield();
@@ -438,6 +440,10 @@ int selectTemp()
 }
 
 int gcd (int a, int b) {
+  float x = a/10;
+  a = (int)floor(x+0.5)*10;
+  float y = b/10;
+  b = (int)floor(b+0.5)*10;
   int c;
   while ( a != 0 ) {
      c = a; a = b%a; b = c;
@@ -692,9 +698,15 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
   
   for (int i=0; i<sampleLoop;)//read sequential samples
   {
-    double readTemp = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;
+//    double readTemp = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;
+    double readTemp = thermoArray[thermoPin].readFarenheit();
+    
+    if(thermoPin == 1)
+      readTemp += 5;
+
     if (!isnan(readTemp))
     {
+      Serial.println(readTemp);
       samples[i] =  readTemp; //Measurement and calibration of TC input 
       ++i;
     }
@@ -817,18 +829,17 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 }
 
 double sampleTemp(int j)
-{
-  double tempRead = 0;
-  int count = 0;
+{  
+  double sum = 0;
   for (int i = 0; i < sampleLoop; ++i)
   {
+    double tempRead = thermoArray[j].readFarenheit();
     if (!isnan(tempRead))
     {
-      tempRead += (TC1_gain*thermoArray[j].readFarenheit())+TC1_offset;
-      ++count;
+      sum += tempRead;
     }
   }
-  return tempRead / (double)count;
+  return sum / (double)sampleLoop;
 }
 
 bool flag = false;
@@ -1039,11 +1050,10 @@ void loop() {
     {
       Serial.println("Select Temperature");
 
-      heaterTemp = sampleTemp(0);
-      coolerTemp = sampleTemp(1);
+
       
       Serial.print("Heater: "); Serial.println(heaterTemp);
-      Serial.print("Cooer: "); Serial.println(coolerTemp);
+      Serial.print("Cooler: "); Serial.println(coolerTemp);
       
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -1166,6 +1176,11 @@ void loop() {
         else
         {
           choice = 3;
+          
+          heaterTemp = sampleTemp(0);
+          coolerTemp = sampleTemp(1);
+          mixTemp = sampleTemp(2);
+          
           hotPortion = inputTemp - coolerTemp;
           coldPortion = heaterTemp - inputTemp;
           int gcdr = gcd(hotPortion, coldPortion);
@@ -1173,9 +1188,10 @@ void loop() {
           coldPortion = coldPortion / gcdr;
 
           
-          Serial.print("Hot Portion = "); Serial.println(hotPortion);
-          Serial.print("Cold Portion = "); Serial.println(coldPortion);
-
+          Serial.print("Heater Temp = "); Serial.print(heaterTemp); Serial.print(" Hot Portion = "); Serial.println(hotPortion);
+          Serial.print("Cooler Temp = "); Serial.print(coolerTemp); Serial.print(" Cold Portion = "); Serial.println(coldPortion);
+          Serial.print("Mix Temp = "); Serial.println(mixTemp);
+          
           if (hotPortion > coldPortion)
           {
             stopPoint = hotPortion;
@@ -1239,8 +1255,6 @@ void loop() {
           }
           else if (choice == 3)
           {
-
-            Serial.print("Residual Water Temp: "); Serial.println(mixTemp);
             if(mixTemp > inputTemp)
             {
               Serial.println("\nOpen Cold Solenoid");
