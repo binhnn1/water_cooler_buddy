@@ -49,8 +49,8 @@ Button resetWifiButton = Button(RESET_WIFI_BUTTON, PULLUP);
 Button resetButton = Button(RESET_MACHINE_BUTTON, PULLUP);
 /***************************************************************************************/
 
-#define heaterThreshold 145
-#define coolerThreshold 55
+#define heaterThreshold 160
+#define coolerThreshold 50
 /********************************SETUP FOR THERMOCOUPLES********************************/
 #define MAXDO 0
 #define MAXCLK 2
@@ -291,8 +291,8 @@ unsigned long previousMillis = 0;
 
 int selectTemp()
 { 
-  heaterTemp = sampleTemp(0);
-  coolerTemp = sampleTemp(1); 
+//  heaterTemp = sampleTemp(0);
+//  coolerTemp = sampleTemp(1); 
   while(true)
   {
     yield();
@@ -388,13 +388,23 @@ int selectTemp()
         lcd.print(encoder0Pos);
         if(encoder0Pos < 100)
         {
-          lcd.setCursor(3, 1);
-          lcd.print("degree F");        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Select Temp:");
+        lcd.setCursor(0, 1);
+        lcd.print(encoder0Pos);
+        lcd.setCursor(3 ,1);
+        lcd.print("degrees F");      
         }
         else
         {
-          lcd.setCursor(4, 1);
-          lcd.print("degree F");          
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Select Temp:");
+        lcd.setCursor(0, 1);
+        lcd.print(encoder0Pos);
+        lcd.setCursor(4 ,1);
+        lcd.print("degrees F");         
         }
       }
 
@@ -625,11 +635,17 @@ void setup()
 
   pwm.begin();
   pwm.setPWMFreq(1000);
-  pwm.setPWM(4,0, 4096);
-  pwm.setPWM(3,0, 4096);
-  pwm.setPWM(2,0, 4096);
-  pwm.setPWM(1,0, 4096);
-  pwm.setPWM(0,0, 4096);
+//  pwm.setPWM(4,0, 4096);
+//  pwm.setPWM(3,0, 4096);
+//  pwm.setPWM(2,0, 4096);
+//  pwm.setPWM(1,0, 4096);
+//  pwm.setPWM(0,0, 4096);
+
+  pwm.setPWM(4, 4096, 0);
+  pwm.setPWM(3, 4096, 0);
+  pwm.setPWM(2, 4096, 0);
+  pwm.setPWM(1, 4096, 0);
+  pwm.setPWM(0, 4096, 0);
 
   RequestRelayHotOn = "RqstHotON";
   RequestRelayHotOff = "RqstHotOFF";
@@ -687,6 +703,7 @@ byte TCError1=false;
 byte overrideindicator=0;
 byte RelayStatus_1=0;
 byte RelayStatus_C=0;
+
 void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 {
   client.loop();
@@ -701,14 +718,23 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 //    double readTemp = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;
     double readTemp = thermoArray[thermoPin].readFarenheit();
     
-    if(thermoPin == 1)
-      readTemp += 5;
+    int falseCount = 0;
 
-    if (!isnan(readTemp))
+    if (!isnan(readTemp) && 0 < readTemp < 300)
     {
+      if(thermoPin == 1)
+        readTemp += 5;
       Serial.println(readTemp);
       samples[i] =  readTemp; //Measurement and calibration of TC input 
       ++i;
+    } else
+    {
+      falseCount++;
+      if (falseCount == 20)
+      {
+        Serial.println("ERROR WITH THERMOCOUPLE");
+        ESP.reset();
+      }
     }
     
 //    samples[i] = thermoArray[thermoPin].readFarenheit();
@@ -716,12 +742,12 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 
   for (int i=0; i<sampleLoop; i++) //average the sequential samples
   {
-  temp_read1=samples[i]+temp_read1;
+    temp_read1=samples[i]+temp_read1;
   }
   temp_read1=temp_read1/(double)sampleLoop;
 
   
-  if(isnan(temp_read1)) //check for NAN, if this is not done, if the TC messes up, the controller can stick on!
+  if(isnan(temp_read1) && temp_read1 > 300 && temp_read1 < 0) //check for NAN, if this is not done, if the TC messes up, the controller can stick on!
   {
 //    temp_read1=temp_set1; //fail safe!
     if (direct)
@@ -834,7 +860,7 @@ double sampleTemp(int j)
   for (int i = 0; i < sampleLoop; ++i)
   {
     double tempRead = thermoArray[j].readFarenheit();
-    if (!isnan(tempRead))
+    if (!isnan(tempRead) && 0 < tempRead < 300)
     {
       sum += tempRead;
     }
@@ -938,67 +964,67 @@ void loop() {
   dis = 4800/(x-20);
   bool mix = false;
 
-  if (resetButton.uniquePress())
-  {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Reset Button Pressed");
-    
-    int rst = 0;
-    while(resetButton.isPressed())
-    {
-      delay(1000);
-      rst++;
-      Serial.print("Reset Machine Button: ");
-      Serial.println(rst);
-      lcd.setCursor(0, 1);
-      lcd.print(rst);
-    }
-    
-    if (rst > 10)
-    {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Hard Reset");
-      Serial.println("HARD RESET");
-      delay(1000);
-    }
-    else if (5 < rst < 10)
-    {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Soft Reset");
-      Serial.println("SOFT RESET");
-      delay(1000);
-    }
-  }
-
-
-  if (resetWifiButton.uniquePress())
-  {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Reset Wifi Pressed");
-    
-    int rst = 0;
-    while(resetWifiButton.isPressed())
-    {
-      delay(1000);
-      rst++;
-      Serial.print("Reset Wifi Button: ");
-      Serial.println(rst);
-      lcd.setCursor(0, 1);
-      lcd.print(rst);
-    }
-    if (rst >= 5)
-    {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Reset Network");
-      Serial.println("RESET NETWORK");
-      delay(1000);
-    }
-  }
+//  if (resetButton.uniquePress())
+//  {
+//    lcd.clear();
+//    lcd.setCursor(0, 0);
+//    lcd.print("Reset Button Pressed");
+//    
+//    int rst = 0;
+//    while(resetButton.isPressed())
+//    {
+//      delay(1000);
+//      rst++;
+//      Serial.print("Reset Machine Button: ");
+//      Serial.println(rst);
+//      lcd.setCursor(0, 1);
+//      lcd.print(rst);
+//    }
+//    
+//    if (rst > 10)
+//    {
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("Hard Reset");
+//      Serial.println("HARD RESET");
+//      delay(1000);
+//    }
+//    else if (5 < rst < 10)
+//    {
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("Soft Reset");
+//      Serial.println("SOFT RESET");
+//      delay(1000);
+//    }
+//  }
+//
+//
+//  if (resetWifiButton.uniquePress())
+//  {
+//    lcd.clear();
+//    lcd.setCursor(0, 0);
+//    lcd.print("Reset Wifi Pressed");
+//    
+//    int rst = 0;
+//    while(resetWifiButton.isPressed())
+//    {
+//      delay(1000);
+//      rst++;
+//      Serial.print("Reset Wifi Button: ");
+//      Serial.println(rst);
+//      lcd.setCursor(0, 1);
+//      lcd.print(rst);
+//    }
+//    if (rst >= 5)
+//    {
+//      lcd.clear();
+//      lcd.setCursor(0, 0);
+//      lcd.print("Reset Network");
+//      Serial.println("RESET NETWORK");
+//      delay(1000);
+//    }
+//  }
   
   if (operate)
   {
@@ -1050,7 +1076,12 @@ void loop() {
     {
       Serial.println("Select Temperature");
 
-
+      heaterTemp = sampleTemp(0);
+      float x = heaterTemp/10;
+      heaterTemp = (int)floor(x+0.5)*10;
+      coolerTemp = sampleTemp(1);
+      float y = coolerTemp/10;
+      coolerTemp = (int)floor(y+0.5)*10;
       
       Serial.print("Heater: "); Serial.println(heaterTemp);
       Serial.print("Cooler: "); Serial.println(coolerTemp);
@@ -1081,12 +1112,12 @@ void loop() {
       if (inputTemp < 100)
       {
         lcd.setCursor(3 ,1);
-        lcd.print("degree F");
+        lcd.print("degrees F");
       }
       else
       {
         lcd.setCursor(4 ,1);
-        lcd.print("degree F"); 
+        lcd.print("degrees F"); 
       }
       
       mix = true;
@@ -1095,8 +1126,8 @@ void loop() {
       {
 //        heaterTemp = thermoArray[0].readFarenheit();
 
-        heaterTemp = sampleTemp(0);
-        coolerTemp = sampleTemp(1);
+//        heaterTemp = sampleTemp(0);
+//        coolerTemp = sampleTempmp(1);
 
         
         int choice = 0;
