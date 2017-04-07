@@ -50,7 +50,7 @@ Button resetButton = Button(RESET_MACHINE_BUTTON, PULLUP);
 /***************************************************************************************/
 
 #define heaterThreshold 160
-#define coolerThreshold 50
+#define coolerThreshold 45
 /********************************SETUP FOR THERMOCOUPLES********************************/
 #define MAXDO 0
 #define MAXCLK 2
@@ -824,7 +824,6 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
     client.publish("topic/1", msg);
 //    delay(1000);
 //    client.loop();
-//    io.digitalWrite(RelayCtrl_1_Pin, LOW);
     lastswitcheventtimeC = runtimeC-lastswitcheventtimeC;  //reset transition time counter (verify no issue with millis() rollover)
     RelayStatus_C=0;  //toggle relay status indicator
     lastruntimeC=runtimeC;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
@@ -857,12 +856,17 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 double sampleTemp(int j)
 {  
   double sum = 0;
-  for (int i = 0; i < sampleLoop; ++i)
+  for (int i = 0; i < sampleLoop;)
   {
     double tempRead = thermoArray[j].readFarenheit();
     if (!isnan(tempRead) && 0 < tempRead < 300)
     {
+      if(j == 1)
+        tempRead += 5;
+      Serial.println(tempRead);
+      
       sum += tempRead;
+      ++i;
     }
   }
   return sum / (double)sampleLoop;
@@ -1029,6 +1033,8 @@ void loop() {
   if (operate)
   {
 
+
+    
     Serial.println("Operating Mode");
 
     lcd.clear();
@@ -1208,9 +1214,9 @@ void loop() {
         {
           choice = 3;
           
-          heaterTemp = sampleTemp(0);
-          coolerTemp = sampleTemp(1);
-          mixTemp = sampleTemp(2);
+//          heaterTemp = sampleTemp(0);
+//          coolerTemp = sampleTemp(1);
+//          mixTemp = sampleTemp(2);
           
           hotPortion = inputTemp - coolerTemp;
           coldPortion = heaterTemp - inputTemp;
@@ -1354,7 +1360,11 @@ void loop() {
 
     if(detectMotion())
     {
-      Serial.println("Motion Detected. Reset1111111111111");      
+      Serial.println("Motion Detected. Reset1111111111111");
+
+      io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
+      io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
+      
       operate = true;
       idle = false;
       sleep = false;
@@ -1407,13 +1417,16 @@ void loop() {
     {
       Serial.println("Motion Detected. Reset2222222222");
       
-      Serial.print("HEATER: ");
-      control(true, SX1509_RELAY_HEATER, 0);
-      Serial.print("COOLER: ");
-      control(false, SX1509_RELAY_COOLER, 1);
-      Serial.print("MIXER: ");
-      control(false, SX1509_RELAY_COOLER, 3);
+//      Serial.print("HEATER: ");
+//      control(true, SX1509_RELAY_HEATER, 0);
+//      Serial.print("COOLER: ");
+//      control(false, SX1509_RELAY_COOLER, 1);
+//      Serial.print("MIXER: ");
+//      control(false, SX1509_RELAY_COOLER, 3);
 
+      io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
+      io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
+      
       operate = true;
       sleep = false;
       idle = false;
