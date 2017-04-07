@@ -126,74 +126,74 @@ void callback(char* topic, byte* payload, unsigned int length) {
   int l = 0;
   int m = 0;
 
-/********************************CONTROL HEATER*****************************************/
-  for (int i = 0; i < RequestRelayHotOn.length(); i++){
-    if((char)payload[i] == RequestRelayHotOn[i]){
+  /********************************CONTROL HEATER*****************************************/
+  for (int i = 0; i < RequestRelayHotOn.length(); i++) {
+    if ((char)payload[i] == RequestRelayHotOn[i]) {
       j++;
-    } 
+    }
   }
-  if(j == RequestRelayHotOn.length()) {
+  if (j == RequestRelayHotOn.length()) {
     Serial.println("TURN ON HEATER");
     io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
   }
-  
- for (int i = 0; i < RequestRelayHotOff.length(); i++){
-    if((char)payload[i] == RequestRelayHotOff[i]){
+
+  for (int i = 0; i < RequestRelayHotOff.length(); i++) {
+    if ((char)payload[i] == RequestRelayHotOff[i]) {
       k++;
-    } 
+    }
   }
-  if(k == RequestRelayHotOff.length()) {
+  if (k == RequestRelayHotOff.length()) {
     Serial.println("TURN OFF HEATER");
     io.digitalWrite(SX1509_RELAY_HEATER, LOW);
-  }  
-/***************************************************************************************/
-  
-/********************************CONTROL COOLER*****************************************/
-  for (int i = 0; i < RequestRelayColdOn.length(); i++){
-    if((char)payload[i] == RequestRelayColdOn[i]){
-      l++;
-    } 
   }
-  if(l == RequestRelayColdOn.length()) {
+  /***************************************************************************************/
+
+  /********************************CONTROL COOLER*****************************************/
+  for (int i = 0; i < RequestRelayColdOn.length(); i++) {
+    if ((char)payload[i] == RequestRelayColdOn[i]) {
+      l++;
+    }
+  }
+  if (l == RequestRelayColdOn.length()) {
     Serial.println("TURN ON COOLER");
     io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
   }
 
- for (int i = 0; i < RequestRelayColdOff.length(); i++){
-    if((char)payload[i] == RequestRelayColdOff[i]){
+  for (int i = 0; i < RequestRelayColdOff.length(); i++) {
+    if ((char)payload[i] == RequestRelayColdOff[i]) {
       m++;
-    } 
+    }
   }
-  if(m == RequestRelayColdOff.length()) {
+  if (m == RequestRelayColdOff.length()) {
     Serial.println("TURN OFF COOLER");
     io.digitalWrite(SX1509_RELAY_COOLER, LOW);
   }
-/***************************************************************************************/
+  /***************************************************************************************/
 
 
 
 
-//
-//  
-//  for (int i = 0; i < RequestAnalog.length(); i++){
-//    if((char)payload[i] == RequestAnalog[i]){
-//      l++;
-//    } 
-//  }
-//  if(l == RequestAnalog.length()){
-//    readStop = true;
-//    printAnalog(readStop);
-//  }
-///***************************************************************************************/
-//  for (int i = 0; i < RequestStop.length(); i++){
-//    if((char)payload[i] == RequestStop[i]){
-//      m++;
-//    } 
-//  }
-//  if(m == RequestStop.length()){
-//    readStop = false;
-//    printAnalog(readStop);
-//  }
+  //
+  //
+  //  for (int i = 0; i < RequestAnalog.length(); i++){
+  //    if((char)payload[i] == RequestAnalog[i]){
+  //      l++;
+  //    }
+  //  }
+  //  if(l == RequestAnalog.length()){
+  //    readStop = true;
+  //    printAnalog(readStop);
+  //  }
+  ///***************************************************************************************/
+  //  for (int i = 0; i < RequestStop.length(); i++){
+  //    if((char)payload[i] == RequestStop[i]){
+  //      m++;
+  //    }
+  //  }
+  //  if(m == RequestStop.length()){
+  //    readStop = false;
+  //    printAnalog(readStop);
+  //  }
 }
 
 /***************************************************************************************/
@@ -205,9 +205,21 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting a conenection to MQTT...");
     lcd.print(".");
+    pwm.setPWM(8, 4096, 0);
+    pwm.setPWM(9, 2048, 0);
+    pwm.setPWM(10, 0, 4096);
+    delay(500);
+    pwm.setPWM(8, 0, 4096);
+    pwm.setPWM(9, 0, 4096);
+    pwm.setPWM(10, 0, 4096);
     if (client.connect("ESP8266Client", emem.getMqttUser().c_str(), emem.getMqttPwd().c_str())) {
       lcd.clear();
       lcd.setCursor(0, 0);
+
+      pwm.setPWM(8, 0, 4096);
+      pwm.setPWM(9, 0, 4096);
+      pwm.setPWM(10, 1024, 0);
+      
       lcd.print("Connected");
       Serial.println("connected");
       client.publish("topic/1", "publishing-yes");
@@ -231,10 +243,10 @@ void resetWifi() {
 }
 
 
-void setup_wifi() { 
- wifiManager.setAPCallback(configModeCallback);
- Serial.println("Setting up Wifi");
-    if (!wifiManager.autoConnect("DeviceConfig","config11")) {
+void setup_wifi() {
+  wifiManager.setAPCallback(configModeCallback);
+  Serial.println("Setting up Wifi");
+  if (!wifiManager.autoConnect("DeviceConfig", "config11")) {
     Serial.println("failed to connect and hit timeout");
     //reset and try again, or maybe put it to deep sleep
     ESP.reset();
@@ -257,7 +269,7 @@ void data_setup(char* data) {
   strcat(data, wifiManager.MQTT_user.c_str());
   strcat(data, sep);
   strcat(data, wifiManager.MQTT_pass.c_str());
-  strcat(data, sep); 
+  strcat(data, sep);
   Serial.println("This is the final string:");
   Serial.println(data);
   Serial.println();
@@ -271,7 +283,7 @@ void displayTemp(int i) {
   } else {
     Serial.print("Thermocouple ");
     Serial.print(i);
-    Serial.print(". F = "); 
+    Serial.print(". F = ");
     Serial.println(c);
   }
 }
@@ -290,10 +302,10 @@ int n = LOW;
 unsigned long previousMillis = 0;
 
 int selectTemp()
-{ 
-//  heaterTemp = sampleTemp(0);
-//  coolerTemp = sampleTemp(1); 
-  while(true)
+{
+  //  heaterTemp = sampleTemp(0);
+  //  coolerTemp = sampleTemp(1);
+  while (true)
   {
     yield();
     unsigned long currentMillis = millis();
@@ -306,121 +318,121 @@ int selectTemp()
       {
         if (io.digitalRead(encoder0PinB) == LOW)
         {
-          encoder0Pos-=5;
+          encoder0Pos -= 5;
         }
         else
         {
-          encoder0Pos+=5;
+          encoder0Pos += 5;
         }
-        if(encoder0Pos >= heaterTemp)
+        if (encoder0Pos >= heaterTemp)
         {
           encoder0Pos = heaterTemp;
-          pwm.setPWM(1,4096, 0);
-          pwm.setPWM(0,4096, 0);
-          delay(500);   
-          pwm.setPWM(1,0, 4096);
-          pwm.setPWM(0,0, 4096);
+          pwm.setPWM(1, 4096, 0);
+          pwm.setPWM(0, 4096, 0);
           delay(500);
-          pwm.setPWM(1,4096, 0);
-          pwm.setPWM(0,4096, 0);
+          pwm.setPWM(1, 0, 4096);
+          pwm.setPWM(0, 0, 4096);
+          delay(500);
+          pwm.setPWM(1, 4096, 0);
+          pwm.setPWM(0, 4096, 0);
         }
-        else if(encoder0Pos <= coolerTemp)
+        else if (encoder0Pos <= coolerTemp)
         {
           encoder0Pos = coolerTemp;
-          pwm.setPWM(4,4096, 0);
-          pwm.setPWM(3,4096, 0);
-          delay(500);   
-          pwm.setPWM(4,0, 4096);
-          pwm.setPWM(3,0, 4096);
+          pwm.setPWM(4, 4096, 0);
+          pwm.setPWM(3, 4096, 0);
           delay(500);
-          pwm.setPWM(4,4096, 0);
-          pwm.setPWM(3,4096, 0);
+          pwm.setPWM(4, 0, 4096);
+          pwm.setPWM(3, 0, 4096);
+          delay(500);
+          pwm.setPWM(4, 4096, 0);
+          pwm.setPWM(3, 4096, 0);
         }
         else
         {
-          a = (encoder0Pos - 50)/10+1;
-          Serial.println(a);   
-          if(a < 4)
+          a = (encoder0Pos - 50) / 10 + 1;
+          Serial.println(a);
+          if (a < 4)
           {
-            pwm.setPWM(4,(a-1)*(4096/2), 0);
-            pwm.setPWM(3,0, 4096);
-            pwm.setPWM(2,0, 4096);
-            pwm.setPWM(1,0, 4096);
-            pwm.setPWM(0,0, 4096);
+            pwm.setPWM(4, (a - 1) * (4096 / 2), 0);
+            pwm.setPWM(3, 0, 4096);
+            pwm.setPWM(2, 0, 4096);
+            pwm.setPWM(1, 0, 4096);
+            pwm.setPWM(0, 0, 4096);
           }
-          else if(a < 6)
+          else if (a < 6)
           {
-            pwm.setPWM(4,4096, 0);
-            pwm.setPWM(3,(a-3)*(4096/2), 0);
-            pwm.setPWM(2,0, 4096);
-            pwm.setPWM(1,0, 4096);
-            pwm.setPWM(0,0, 4096);
+            pwm.setPWM(4, 4096, 0);
+            pwm.setPWM(3, (a - 3) * (4096 / 2), 0);
+            pwm.setPWM(2, 0, 4096);
+            pwm.setPWM(1, 0, 4096);
+            pwm.setPWM(0, 0, 4096);
           }
-          else if(a < 8)
+          else if (a < 8)
           {
-            pwm.setPWM(4,4096, 0);
-            pwm.setPWM(3,4096, 0);
-            pwm.setPWM(2,(a-5)*(4096/2), 0);
-            pwm.setPWM(1,0, 4096);
-            pwm.setPWM(0,0, 4096);
+            pwm.setPWM(4, 4096, 0);
+            pwm.setPWM(3, 4096, 0);
+            pwm.setPWM(2, (a - 5) * (4096 / 2), 0);
+            pwm.setPWM(1, 0, 4096);
+            pwm.setPWM(0, 0, 4096);
           }
-          else if(a < 10)
+          else if (a < 10)
           {
-            pwm.setPWM(4,4096, 0);
-            pwm.setPWM(3,4096, 0);
-            pwm.setPWM(2,4096, 0);
-            pwm.setPWM(1,(a-7)*(4096/2), 0);
-            pwm.setPWM(0,0, 4096);
+            pwm.setPWM(4, 4096, 0);
+            pwm.setPWM(3, 4096, 0);
+            pwm.setPWM(2, 4096, 0);
+            pwm.setPWM(1, (a - 7) * (4096 / 2), 0);
+            pwm.setPWM(0, 0, 4096);
           }
-          else if(a <12)
+          else if (a < 12)
           {
-            pwm.setPWM(4,4096, 0);
-            pwm.setPWM(3,4096, 0);
-            pwm.setPWM(2,4096, 0);
-            pwm.setPWM(1,4096, 0);
-            pwm.setPWM(0,(a-9)*(4096/2), 0);
+            pwm.setPWM(4, 4096, 0);
+            pwm.setPWM(3, 4096, 0);
+            pwm.setPWM(2, 4096, 0);
+            pwm.setPWM(1, 4096, 0);
+            pwm.setPWM(0, (a - 9) * (4096 / 2), 0);
           }
         }
         Serial.println(encoder0Pos, DEC);
 
-//        lcd.clear();
+        //        lcd.clear();
         lcd.setCursor(0, 1);
         lcd.print(encoder0Pos);
-        if(encoder0Pos < 100)
+        if (encoder0Pos < 100)
         {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Select Temp:");
-        lcd.setCursor(0, 1);
-        lcd.print(encoder0Pos);
-        lcd.setCursor(3 ,1);
-        lcd.print("degrees F");      
+          lcd.clear();
+          lcd.setCursor(0, 0);
+          lcd.print("Select Temp:");
+          lcd.setCursor(0, 1);
+          lcd.print(encoder0Pos);
+          lcd.setCursor(3 , 1);
+          lcd.print("degrees F");
         }
         else
         {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Select Temp:");
-        lcd.setCursor(0, 1);
-        lcd.print(encoder0Pos);
-        lcd.setCursor(4 ,1);
-        lcd.print("degrees F");         
+          lcd.clear();
+          lcd.setCursor(0, 0);
+          lcd.print("Select Temp:");
+          lcd.setCursor(0, 1);
+          lcd.print(encoder0Pos);
+          lcd.setCursor(4 , 1);
+          lcd.print("degrees F");
         }
       }
 
       if (currentMillis - previousMillis >= 30000)
       {
-      previousMillis = currentMillis;
-      Serial.println("Time out for select temperature");
-      
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Time Out");
-      delay(1000);
-      
-      return -10;
+        previousMillis = currentMillis;
+        Serial.println("Time out for select temperature");
+
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Time Out");
+        delay(1000);
+
+        return -10;
       }
-      
+
       encoder0PinALast = n;
       if (!io.digitalRead(encoder0Select))
       {
@@ -445,18 +457,18 @@ int selectTemp()
         return encoder0Pos;
       }
     }
-    
+
   }
 }
 
 int gcd (int a, int b) {
-  float x = a/10;
-  a = (int)floor(x+0.5)*10;
-  float y = b/10;
-  b = (int)floor(b+0.5)*10;
+  float x = a / 10;
+  a = (int)floor(x + 0.5) * 10;
+  float y = b / 10;
+  b = (int)floor(b + 0.5) * 10;
   int c;
   while ( a != 0 ) {
-     c = a; a = b%a; b = c;
+    c = a; a = b % a; b = c;
   }
   return b;
 }
@@ -464,49 +476,49 @@ int gcd (int a, int b) {
 
 bool detectMotion()
 {
-    if (io.digitalRead(SX1509_MOTION0))
-    {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Detected Motion:");
-      lcd.setCursor(0, 1);
-      lcd.print("Front");
-      delay(2000);
-      return true;
-    }
+  if (io.digitalRead(SX1509_MOTION0))
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Detected Motion:");
+    lcd.setCursor(0, 1);
+    lcd.print("Front");
+    delay(2000);
+    return true;
+  }
 
-    if (io.digitalRead(SX1509_MOTION1))
-    {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Detected Motion:");
-      lcd.setCursor(0, 1);
-      lcd.print("Front");
-      delay(2000);
-      return true;
-    }
+  if (io.digitalRead(SX1509_MOTION1))
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Detected Motion:");
+    lcd.setCursor(0, 1);
+    lcd.print("Front");
+    delay(2000);
+    return true;
+  }
 
-    if (io.digitalRead(SX1509_MOTION2))
-    {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Detected Motion:");
-      lcd.setCursor(0, 1);
-      lcd.print("Front");
-      delay(2000);
-      return true;
-    }
-    return false;
+  if (io.digitalRead(SX1509_MOTION2))
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Detected Motion:");
+    lcd.setCursor(0, 1);
+    lcd.print("Front");
+    delay(2000);
+    return true;
+  }
+  return false;
 }
 
 
-void setup() 
+void setup()
 {
 
-  
+
   Serial.begin (115200);
   Serial.println("\nstart");
-  
+
   Serial.print("Connecting to SX1509");
   while (!io.begin(SX1509_ADDRESS)) {
     yield();
@@ -521,12 +533,12 @@ void setup()
   io.pinMode(SX1509_MOTION2, INPUT);
   io.pinMode(SX1509_RELEASE_BUTTON, INPUT);
   io.digitalWrite(SX1509_RELEASE_BUTTON, HIGH);
-  
+
   io.pinMode(encoder0Select, INPUT);
   io.digitalWrite(encoder0Select, HIGH);
-  io.pinMode(encoder0PinA, INPUT); 
+  io.pinMode(encoder0PinA, INPUT);
   io.digitalWrite(encoder0PinA, HIGH);       // turn on pull-up resistor
-  io.pinMode(encoder0PinB, INPUT); 
+  io.pinMode(encoder0PinB, INPUT);
   io.digitalWrite(encoder0PinB, HIGH);       // turn on pull-up resistor
 
 
@@ -536,11 +548,11 @@ void setup()
   io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
   io.digitalWrite(SX1509_RELAY_HEATER, LOW);
   io.digitalWrite(SX1509_RELAY_COOLER, LOW);
-  
-//  pinMode(3, FUNC_GPIO3);
-//  pinMode(13, FUNC_GPIO13)
 
-  
+  //  pinMode(3, FUNC_GPIO3);
+  //  pinMode(13, FUNC_GPIO13)
+
+
 
 
   Wire.begin();
@@ -549,18 +561,37 @@ void setup()
   lcd.backlight();
 
   last = 0;
-  
+
   Serial.println();
   Serial.println();
 
   emem.loadData();
-  
+
   Serial.println(emem.getWifiSsid());
   Serial.println(emem.getWifiPwd());
   Serial.println(emem.getMqttServer());
   Serial.println(emem.getMqttPort());
   Serial.println(emem.getMqttUser());
   Serial.println(emem.getMqttPwd());
+
+
+
+  pwm.begin();
+  pwm.setPWMFreq(1000);
+
+  pwm.setPWM(0, 0, 4096);
+  pwm.setPWM(1, 0, 4096);
+  pwm.setPWM(2, 0, 4096);
+  pwm.setPWM(3, 0, 4096);
+  pwm.setPWM(4, 0, 4096);
+  pwm.setPWM(5, 0, 4096);
+  pwm.setPWM(6, 0, 4096);
+  pwm.setPWM(7, 0, 4096);
+  pwm.setPWM(8, 0, 4096);
+  pwm.setPWM(9, 0, 4096);
+  pwm.setPWM(10, 0, 4096);
+
+
 
   Serial.println();
   Serial.print("Connecting to ");
@@ -575,27 +606,37 @@ void setup()
 
   lcd.clear();
   lcd.setCursor(0, 0);
-  
+
   WiFi.begin(emem.getWifiSsid().c_str(), emem.getWifiPwd().c_str());
-//  WiFi.begin("iPhone", "123456789");
+  //  WiFi.begin("iPhone", "123456789");
   yield();
   for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
-    
+    pwm.setPWM(8, 4096, 0);
+    pwm.setPWM(9, 2048, 0);
+    pwm.setPWM(10, 0, 4096);
     delay(500);
+    pwm.setPWM(8, 0, 4096);
+    pwm.setPWM(9, 0, 4096);
+    pwm.setPWM(10, 0, 4096);
     Serial.print(".");
-    lcd.print(".");  
+    lcd.print(".");
     if (c == 30) {
-      
+
+
+      pwm.setPWM(8, 4096, 0);
+      pwm.setPWM(9, 0, 4096);
+      pwm.setPWM(10, 0, 4096);
+
       Serial.println();
       Serial.println("Connection Time Out...");
       Serial.println("Enter AP Mode...");
-      
+
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Time Out...");
       lcd.setCursor(0, 1);
       lcd.print("Enter AP Mode...");
-      
+
       setup_wifi();
       char data[100] = "";
       data_setup(data);
@@ -606,7 +647,7 @@ void setup()
       lcd.print("Saving Data");
       lcd.setCursor(0, 1);
       lcd.print("Rebooting");
-      
+
       for (int i = 0; i < 3; ++i)
       {
         Serial.print(".");
@@ -621,31 +662,31 @@ void setup()
 
   delay(1000);
   lcd.clear();
-  
+
   Serial.println("connected");
+
+  pwm.setPWM(8, 0, 4096);
+  pwm.setPWM(9, 0, 4096);
+  pwm.setPWM(10, 1024, 0);
 
   lcd.setCursor(0, 0);
   lcd.print("Connected");
   delay(1000);
-  
+
   strcpy(mqtt_server, emem.getMqttServer().c_str());
   client.setServer(mqtt_server, atoi(emem.getMqttPort().c_str()));
   client.setCallback(callback);
 
 
-  pwm.begin();
-  pwm.setPWMFreq(1000);
-//  pwm.setPWM(4,0, 4096);
-//  pwm.setPWM(3,0, 4096);
-//  pwm.setPWM(2,0, 4096);
-//  pwm.setPWM(1,0, 4096);
-//  pwm.setPWM(0,0, 4096);
 
-  pwm.setPWM(4, 4096, 0);
-  pwm.setPWM(3, 4096, 0);
-  pwm.setPWM(2, 4096, 0);
-  pwm.setPWM(1, 4096, 0);
-  pwm.setPWM(0, 4096, 0);
+
+
+
+  //  pwm.setPWM(4, 4096, 0);
+  //  pwm.setPWM(3, 4096, 0);
+  //  pwm.setPWM(2, 4096, 0);
+  //  pwm.setPWM(1, 4096, 0);
+  //  pwm.setPWM(0, 4096, 0);
 
   RequestRelayHotOn = "RqstHotON";
   RequestRelayHotOff = "RqstHotOFF";
@@ -664,13 +705,13 @@ void setup()
   }
 
   client.print(String("POST ") + url + "?energy=setup" + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" + 
+               "Host: " + host + "\r\n" +
                "Connection: close\r\n\r\n");
   delay(10);
 
   Serial.print("Setup Respond:");
   int c = 0;
-  while(client.available()){
+  while (client.available()) {
     String line = client.readStringUntil('\r');
     ++c;
     if (c >= 8 ) {
@@ -678,7 +719,7 @@ void setup()
       lastEnergy = line.toFloat();
     }
   }
-  
+
 }
 
 
@@ -691,41 +732,41 @@ void setup()
 #define lower_hysteresis_1 2  //value for undershoot hysteresis (degrees)
 #define min_trans_time 5000
 
-unsigned long lastswitcheventtimeH=0; //time in millis() since last switch event
+unsigned long lastswitcheventtimeH = 0; //time in millis() since last switch event
 unsigned long runtimeH = 0;
 unsigned long lastruntimeH = 0;
 
-unsigned long lastswitcheventtimeC=0; //time in millis() since last switch event
+unsigned long lastswitcheventtimeC = 0; //time in millis() since last switch event
 unsigned long runtimeC = 0;
 unsigned long lastruntimeC = 0;
 
-byte TCError1=false;
-byte overrideindicator=0;
-byte RelayStatus_1=0;
-byte RelayStatus_C=0;
+byte TCError1 = false;
+byte overrideindicator = 0;
+byte RelayStatus_1 = 0;
+byte RelayStatus_C = 0;
 
 void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
 {
   client.loop();
   delay(1000);
 
-  
-  int temp_read1=0; //initialize the temp variable for the averages
-  double samples[sampleLoop]={0};
-  
-  for (int i=0; i<sampleLoop;)//read sequential samples
+
+  int temp_read1 = 0; //initialize the temp variable for the averages
+  double samples[sampleLoop] = {0};
+
+  for (int i = 0; i < sampleLoop;) //read sequential samples
   {
-//    double readTemp = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;
+    //    double readTemp = (TC1_gain*thermoArray[thermoPin].readFarenheit())+TC1_offset;
     double readTemp = thermoArray[thermoPin].readFarenheit();
-    
+
     int falseCount = 0;
 
     if (!isnan(readTemp) && 0 < readTemp < 300)
     {
-      if(thermoPin == 1)
-        readTemp += 5;
+      if (thermoPin == 1)
+        readTemp += 10;
       Serial.println(readTemp);
-      samples[i] =  readTemp; //Measurement and calibration of TC input 
+      samples[i] =  readTemp; //Measurement and calibration of TC input
       ++i;
     } else
     {
@@ -736,135 +777,135 @@ void control(bool direct, int RelayCtrl_1_Pin, int thermoPin)
         ESP.reset();
       }
     }
-    
-//    samples[i] = thermoArray[thermoPin].readFarenheit();
+
+    //    samples[i] = thermoArray[thermoPin].readFarenheit();
   }
 
-  for (int i=0; i<sampleLoop; i++) //average the sequential samples
+  for (int i = 0; i < sampleLoop; i++) //average the sequential samples
   {
-    temp_read1=samples[i]+temp_read1;
+    temp_read1 = samples[i] + temp_read1;
   }
-  temp_read1=temp_read1/(double)sampleLoop;
+  temp_read1 = temp_read1 / (double)sampleLoop;
 
-  
-  if(isnan(temp_read1) && temp_read1 > 300 && temp_read1 < 0) //check for NAN, if this is not done, if the TC messes up, the controller can stick on!
+
+  if (isnan(temp_read1) && temp_read1 > 300 && temp_read1 < 0) //check for NAN, if this is not done, if the TC messes up, the controller can stick on!
   {
-//    temp_read1=temp_set1; //fail safe!
+    //    temp_read1=temp_set1; //fail safe!
     if (direct)
       temp_read1 = heaterThreshold;
     else
       temp_read1 = coolerThreshold;
-    TCError1=true;
+    TCError1 = true;
   }
   else
   {
-    TCError1=false;
+    TCError1 = false;
   }
-  
- if(thermoPin == 3)
- {
-  Serial.print("AmbientCJTemp(C):"); //MAX31855 Internal Cold junction temp reading (in C) (roughly ambient temp to the IC)
-  Serial.print(thermoArray[thermoPin].readInternal()); Serial.print(" "); //Read temp from TC controller internal cold junction  
-  Serial.print("AvgCurrentTCTemp(F): "); Serial.print(temp_read1); Serial.print(" "); //Display averaged TC temperature
-  Serial.print("RelayStatusHot: "); Serial.print(RelayStatus_1);Serial.print(" "); Serial.print("RelayStatusCold: "); Serial.print(RelayStatus_C); Serial.println(" "); //Dis[play the present status of the thermal control relay
-  return;
- } 
- if (direct)
- { 
-  runtimeH=millis(); //set runtime
-  if (lastruntimeH>runtimeH) //check for millis() rollover event, prepare accordingly, skip and wait until time reaccumulates
-  {
-    overrideindicator=1;
-    lastruntimeH=runtimeH;
-    delay (min_trans_time); //delay if overflow event is detected as failsafe
-  }
- 
-  if (RelayStatus_1==0 && temp_read1<=heaterThreshold-lower_hysteresis_1 && min_trans_time<(lastruntimeH-runtimeH) && !overrideindicator)
-  {
-    snprintf (msg, 75, "RqstHotON", value);
-    client.publish("topic/1", msg);
-//    delay(1000);
-//    client.loop();
-//    io.digitalWrite(RelayCtrl_1_Pin, HIGH);
 
-    lastswitcheventtimeH = runtimeH-lastswitcheventtimeH;  //reset transition time counter (verify no issue with millis() rollover)
-    RelayStatus_1=1;  //toggle relay status indicator
-    lastruntimeH=runtimeH;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
-    overrideindicator=0; //reset millis() overflow event indicator
-          
-  }
-  else if (RelayStatus_1==1 && temp_read1>=heaterThreshold+upper_hysteresis_1 && min_trans_time<(lastruntimeH-runtimeH) && !overrideindicator)
+  if (thermoPin == 3)
   {
+    Serial.print("AmbientCJTemp(C):"); //MAX31855 Internal Cold junction temp reading (in C) (roughly ambient temp to the IC)
+    Serial.print(thermoArray[thermoPin].readInternal()); Serial.print(" "); //Read temp from TC controller internal cold junction
+    Serial.print("AvgCurrentTCTemp(F): "); Serial.print(temp_read1); Serial.print(" "); //Display averaged TC temperature
+    Serial.print("RelayStatusHot: "); Serial.print(RelayStatus_1); Serial.print(" "); Serial.print("RelayStatusCold: "); Serial.print(RelayStatus_C); Serial.println(" "); //Dis[play the present status of the thermal control relay
+    return;
+  }
+  if (direct)
+  {
+    runtimeH = millis(); //set runtime
+    if (lastruntimeH > runtimeH) //check for millis() rollover event, prepare accordingly, skip and wait until time reaccumulates
+    {
+      overrideindicator = 1;
+      lastruntimeH = runtimeH;
+      delay (min_trans_time); //delay if overflow event is detected as failsafe
+    }
 
-    snprintf (msg, 75, "RqstHotOFF", value);
-    client.publish("topic/1", msg);
-//    delay(1000);
-//    client.loop();
-//    io.digitalWrite(RelayCtrl_1_Pin, LOW);
-    lastswitcheventtimeH =  runtimeH-lastswitcheventtimeH; //reset transition time counter (verify no issue with millis() rollover)
-    RelayStatus_1=0;  //toggle relay status indicator
-    lastruntimeH=runtimeH;   //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
-    overrideindicator=0; //reset millis() overflow event indicator
-    
-  } 
-  else {}
- } 
- else
- {
-  runtimeC=millis(); //set runtime
-  if (lastruntimeC>runtimeC) //check for millis() rollover event, prepare accordingly, skip and wait until time reaccumulates
-  {
-    overrideindicator=1;
-    lastruntimeC=runtimeC;
-    delay (min_trans_time); //delay if overflow event is detected as failsafe
+    if (RelayStatus_1 == 0 && temp_read1 <= heaterThreshold - lower_hysteresis_1 && min_trans_time < (lastruntimeH - runtimeH) && !overrideindicator)
+    {
+      snprintf (msg, 75, "RqstHotON", value);
+      client.publish("topic/1", msg);
+      //    delay(1000);
+      //    client.loop();
+      //    io.digitalWrite(RelayCtrl_1_Pin, HIGH);
+
+      lastswitcheventtimeH = runtimeH - lastswitcheventtimeH; //reset transition time counter (verify no issue with millis() rollover)
+      RelayStatus_1 = 1; //toggle relay status indicator
+      lastruntimeH = runtimeH; //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
+      overrideindicator = 0; //reset millis() overflow event indicator
+
+    }
+    else if (RelayStatus_1 == 1 && temp_read1 >= heaterThreshold + upper_hysteresis_1 && min_trans_time < (lastruntimeH - runtimeH) && !overrideindicator)
+    {
+
+      snprintf (msg, 75, "RqstHotOFF", value);
+      client.publish("topic/1", msg);
+      //    delay(1000);
+      //    client.loop();
+      //    io.digitalWrite(RelayCtrl_1_Pin, LOW);
+      lastswitcheventtimeH =  runtimeH - lastswitcheventtimeH; //reset transition time counter (verify no issue with millis() rollover)
+      RelayStatus_1 = 0; //toggle relay status indicator
+      lastruntimeH = runtimeH; //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
+      overrideindicator = 0; //reset millis() overflow event indicator
+
+    }
+    else {}
   }
-  if (RelayStatus_C==1 && temp_read1<=coolerThreshold-lower_hysteresis_1 && min_trans_time<(lastruntimeC-runtimeC) && !overrideindicator)
+  else
   {
-    snprintf (msg, 75, "RqstColdOFF", value);
-    client.publish("topic/1", msg);
-//    delay(1000);
-//    client.loop();
-    lastswitcheventtimeC = runtimeC-lastswitcheventtimeC;  //reset transition time counter (verify no issue with millis() rollover)
-    RelayStatus_C=0;  //toggle relay status indicator
-    lastruntimeC=runtimeC;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
-    overrideindicator=0; //reset millis() overflow event indicator
-        
+    runtimeC = millis(); //set runtime
+    if (lastruntimeC > runtimeC) //check for millis() rollover event, prepare accordingly, skip and wait until time reaccumulates
+    {
+      overrideindicator = 1;
+      lastruntimeC = runtimeC;
+      delay (min_trans_time); //delay if overflow event is detected as failsafe
+    }
+    if (RelayStatus_C == 1 && temp_read1 <= coolerThreshold - lower_hysteresis_1 && min_trans_time < (lastruntimeC - runtimeC) && !overrideindicator)
+    {
+      snprintf (msg, 75, "RqstColdOFF", value);
+      client.publish("topic/1", msg);
+      //    delay(1000);
+      //    client.loop();
+      lastswitcheventtimeC = runtimeC - lastswitcheventtimeC; //reset transition time counter (verify no issue with millis() rollover)
+      RelayStatus_C = 0; //toggle relay status indicator
+      lastruntimeC = runtimeC; //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
+      overrideindicator = 0; //reset millis() overflow event indicator
+
+    }
+    else if (RelayStatus_C == 0 && temp_read1 >= coolerThreshold + upper_hysteresis_1 && min_trans_time < (lastruntimeC - runtimeC) && !overrideindicator)
+    {
+      snprintf (msg, 75, "RqstColdON", value);
+      client.publish("topic/1", msg);
+      //    delay(1000);
+      //    client.loop();
+      //       io.digitalWrite(RelayCtrl_1_Pin, HIGH);
+      lastswitcheventtimeC = runtimeC - lastswitcheventtimeC; //reset transition time counter (verify no issue with millis() rollover)
+      RelayStatus_C = 1; //toggle relay status indicator
+      lastruntimeC = runtimeC; //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
+      overrideindicator = 0; //reset millis() overflow event indicator
+    }
+    else {}
   }
-  else if (RelayStatus_C==0 && temp_read1>=coolerThreshold+upper_hysteresis_1 && min_trans_time<(lastruntimeC-runtimeC) && !overrideindicator)
-  {
-    snprintf (msg, 75, "RqstColdON", value);
-    client.publish("topic/1", msg);
-//    delay(1000);
-//    client.loop();
-//       io.digitalWrite(RelayCtrl_1_Pin, HIGH);
-       lastswitcheventtimeC = runtimeC-lastswitcheventtimeC;  //reset transition time counter (verify no issue with millis() rollover)
-       RelayStatus_C=1;  //toggle relay status indicator
-       lastruntimeC=runtimeC;  //update lastruntime variable - used to check switchine period and to permit checking for millis() overflow event
-       overrideindicator=0; //reset millis() overflow event indicator
-  } 
-  else {}
- }
-  
-//  Serial.print("SetPoint(F): "); Serial.print(temp_set1); Serial.print(" ");
+
+  //  Serial.print("SetPoint(F): "); Serial.print(temp_set1); Serial.print(" ");
   Serial.print("AmbientCJTemp(C):"); //MAX31855 Internal Cold junction temp reading (in C) (roughly ambient temp to the IC)
-  Serial.print(thermoArray[thermoPin].readInternal()); Serial.print(" "); //Read temp from TC controller internal cold junction  
+  Serial.print(thermoArray[thermoPin].readInternal()); Serial.print(" "); //Read temp from TC controller internal cold junction
   Serial.print("AvgCurrentTCTemp(F): "); Serial.print(temp_read1); Serial.print(" "); //Display averaged TC temperature
-  Serial.print("RelayStatusHot: "); Serial.print(RelayStatus_1);Serial.print(" "); Serial.print("RelayStatusCold: "); Serial.print(RelayStatus_C); Serial.println(" "); //Dis[play the present status of the thermal control relay
-//  Serial.print("TimeFromLastToPresentSwitchState(proportional ms): "); Serial.print(lastswitcheventtime); Serial.print(" "); Serial.print("TotalRuntime(ms): "); Serial.println(runtime);
+  Serial.print("RelayStatusHot: "); Serial.print(RelayStatus_1); Serial.print(" "); Serial.print("RelayStatusCold: "); Serial.print(RelayStatus_C); Serial.println(" "); //Dis[play the present status of the thermal control relay
+  //  Serial.print("TimeFromLastToPresentSwitchState(proportional ms): "); Serial.print(lastswitcheventtime); Serial.print(" "); Serial.print("TotalRuntime(ms): "); Serial.println(runtime);
 }
 
 double sampleTemp(int j)
-{  
+{
   double sum = 0;
   for (int i = 0; i < sampleLoop;)
   {
     double tempRead = thermoArray[j].readFarenheit();
     if (!isnan(tempRead) && 0 < tempRead < 300)
     {
-      if(j == 1)
-        tempRead += 5;
+      if (j == 1)
+        tempRead += 10;
       Serial.println(tempRead);
-      
+
       sum += tempRead;
       ++i;
     }
@@ -880,7 +921,7 @@ void printCurrentDetails() {
   currentTime = millis();
   unsigned long interval = currentTime - lastTime;
   lastTime = currentTime;
-  
+
   Wire.requestFrom(8, 100);    // request 6 bytes from slave device #8
 
 
@@ -890,34 +931,34 @@ void printCurrentDetails() {
   char data[20] = "";
   while (Wire.available()) { // slave may send less than requested
     char c = (Wire.read()); // receive a byte as character
-    if(c == '#')
+    if (c == '#')
       break;
     strncat(data, &c, 1);
   }
   Serial.println(data);
 
-//  char* pch;
-//  count = 0;
-//  pch = strtok(data, "#");
-//  float activePower;
-//  while (pch != NULL) {
-//    ++count;
-//    switch(count) {
-//        case 1: Serial.print("IrmsA (mA): "); Serial.println(pch); break;
-//        case 2: Serial.print("Vrms (V): "); Serial.println(pch); break;
-//        case 3: Serial.print("Apparent Power A (mW): "); Serial.println(pch); break;
-//        case 4: Serial.print("Active Power A (mW): "); Serial.println(pch); activePower = atof(pch); break;
-//        case 5: Serial.print("Reactive Power A (mW): "); Serial.println(pch); break;
-////        case 6: Serial.print("Power Factor A (x100): "); Serial.println(pch); break;
-////        case 7: Serial.print("Active Energy A (hex): "); Serial.println(pch); break;
-//    }
-//    pch = strtok(NULL, "#");
-//  }
+  //  char* pch;
+  //  count = 0;
+  //  pch = strtok(data, "#");
+  //  float activePower;
+  //  while (pch != NULL) {
+  //    ++count;
+  //    switch(count) {
+  //        case 1: Serial.print("IrmsA (mA): "); Serial.println(pch); break;
+  //        case 2: Serial.print("Vrms (V): "); Serial.println(pch); break;
+  //        case 3: Serial.print("Apparent Power A (mW): "); Serial.println(pch); break;
+  //        case 4: Serial.print("Active Power A (mW): "); Serial.println(pch); activePower = atof(pch); break;
+  //        case 5: Serial.print("Reactive Power A (mW): "); Serial.println(pch); break;
+  ////        case 6: Serial.print("Power Factor A (x100): "); Serial.println(pch); break;
+  ////        case 7: Serial.print("Active Energy A (hex): "); Serial.println(pch); break;
+  //    }
+  //    pch = strtok(NULL, "#");
+  //  }
 
   float activePower = atof(data);
-  Serial.print("Interval: "); Serial.println(interval/1000);
+  Serial.print("Interval: "); Serial.println(interval / 1000);
   Serial.print("Last Energy: "); Serial.println(lastEnergy);
-  currentEnergy = activePower*(interval/1000)/3600 + lastEnergy;
+  currentEnergy = activePower * (interval / 1000) / 3600 + lastEnergy;
   lastEnergy = currentEnergy;
   Serial.print("Energy Consumed: ");
   Serial.println(currentEnergy);
@@ -929,20 +970,20 @@ void printCurrentDetails() {
   }
 
   client.print(String("POST ") + url + "?energy=" + currentEnergy + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" + 
+               "Host: " + host + "\r\n" +
                "Connection: close\r\n\r\n");
   delay(10);
 
   Serial.println("Respond:");
   int c = 0;
-  while(client.available()){
+  while (client.available()) {
     String line = client.readStringUntil('\r');
     ++c;
     if (c >= 8 )
       Serial.print(line);
   }
-  
-  
+
+
   Serial.println();
 }
 
@@ -951,90 +992,93 @@ bool operate = false;
 bool idle = true;
 
 void loop() {
-  
+
   if (!client.connected())
     reconnect();
 
   client.loop();
 
 
-//  printCurrentDetails();
+  //  printCurrentDetails();
 
   x = analogRead(A0);
 
-  while(millis() <= last + 20) {};
-  
+  while (millis() <= last + 20) {};
+
   last = millis();
-  dis = 4800/(x-20);
+  dis = 4800 / (x - 20);
   bool mix = false;
 
-//  if (resetButton.uniquePress())
-//  {
-//    lcd.clear();
-//    lcd.setCursor(0, 0);
-//    lcd.print("Reset Button Pressed");
-//    
-//    int rst = 0;
-//    while(resetButton.isPressed())
-//    {
-//      delay(1000);
-//      rst++;
-//      Serial.print("Reset Machine Button: ");
-//      Serial.println(rst);
-//      lcd.setCursor(0, 1);
-//      lcd.print(rst);
-//    }
-//    
-//    if (rst > 10)
-//    {
-//      lcd.clear();
-//      lcd.setCursor(0, 0);
-//      lcd.print("Hard Reset");
-//      Serial.println("HARD RESET");
-//      delay(1000);
-//    }
-//    else if (5 < rst < 10)
-//    {
-//      lcd.clear();
-//      lcd.setCursor(0, 0);
-//      lcd.print("Soft Reset");
-//      Serial.println("SOFT RESET");
-//      delay(1000);
-//    }
-//  }
-//
-//
-//  if (resetWifiButton.uniquePress())
-//  {
-//    lcd.clear();
-//    lcd.setCursor(0, 0);
-//    lcd.print("Reset Wifi Pressed");
-//    
-//    int rst = 0;
-//    while(resetWifiButton.isPressed())
-//    {
-//      delay(1000);
-//      rst++;
-//      Serial.print("Reset Wifi Button: ");
-//      Serial.println(rst);
-//      lcd.setCursor(0, 1);
-//      lcd.print(rst);
-//    }
-//    if (rst >= 5)
-//    {
-//      lcd.clear();
-//      lcd.setCursor(0, 0);
-//      lcd.print("Reset Network");
-//      Serial.println("RESET NETWORK");
-//      delay(1000);
-//    }
-//  }
-  
+  //  if (resetButton.uniquePress())
+  //  {
+  //    lcd.clear();
+  //    lcd.setCursor(0, 0);
+  //    lcd.print("Reset Button Pressed");
+  //
+  //    int rst = 0;
+  //    while(resetButton.isPressed())
+  //    {
+  //      delay(1000);
+  //      rst++;
+  //      Serial.print("Reset Machine Button: ");
+  //      Serial.println(rst);
+  //      lcd.setCursor(0, 1);
+  //      lcd.print(rst);
+  //    }
+  //
+  //    if (rst > 10)
+  //    {
+  //      lcd.clear();
+  //      lcd.setCursor(0, 0);
+  //      lcd.print("Hard Reset");
+  //      Serial.println("HARD RESET");
+  //      delay(1000);
+  //    }
+  //    else if (5 < rst < 10)
+  //    {
+  //      lcd.clear();
+  //      lcd.setCursor(0, 0);
+  //      lcd.print("Soft Reset");
+  //      Serial.println("SOFT RESET");
+  //      delay(1000);
+  //    }
+  //  }
+  //
+  //
+  //  if (resetWifiButton.uniquePress())
+  //  {
+  //    lcd.clear();
+  //    lcd.setCursor(0, 0);
+  //    lcd.print("Reset Wifi Pressed");
+  //
+  //    int rst = 0;
+  //    while(resetWifiButton.isPressed())
+  //    {
+  //      delay(1000);
+  //      rst++;
+  //      Serial.print("Reset Wifi Button: ");
+  //      Serial.println(rst);
+  //      lcd.setCursor(0, 1);
+  //      lcd.print(rst);
+  //    }
+  //    if (rst >= 5)
+  //    {
+  //      lcd.clear();
+  //      lcd.setCursor(0, 0);
+  //      lcd.print("Reset Network");
+  //      Serial.println("RESET NETWORK");
+  //      delay(1000);
+  //    }
+  //  }
+
   if (operate)
   {
 
+    pwm.setPWM(5, 0, 4096);
+    pwm.setPWM(6, 0, 4096);
+    pwm.setPWM(7, 1028, 0);
 
-    
+
     Serial.println("Operating Mode");
 
     lcd.clear();
@@ -1060,14 +1104,14 @@ void loop() {
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Back To Idle");
-        
-//        idle = true;
-//        operate = false;
-//        idle = false;
-//
-//        previousMillis = millis();
-//        
-//        return;
+
+        //        idle = true;
+        //        operate = false;
+        //        idle = false;
+        //
+        //        previousMillis = millis();
+        //
+        //        return;
 
 
         operate = false;
@@ -1083,27 +1127,27 @@ void loop() {
       Serial.println("Select Temperature");
 
       heaterTemp = sampleTemp(0);
-      float x = heaterTemp/10;
-      heaterTemp = (int)floor(x+0.5)*10;
+      float x = heaterTemp / 10;
+      heaterTemp = (int)floor(x + 0.5) * 10;
       coolerTemp = sampleTemp(1);
-      float y = coolerTemp/10;
-      coolerTemp = (int)floor(y+0.5)*10;
-      
+      float y = coolerTemp / 10;
+      coolerTemp = (int)floor(y + 0.5) * 10;
+
       Serial.print("Heater: "); Serial.println(heaterTemp);
       Serial.print("Cooler: "); Serial.println(coolerTemp);
-      
+
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Select Temp:");
-      
-//      for(int i = 0; i < 3; ++i)
-//      {
-//        Serial.print(".");
-//        lcd.print(".");
-//        delay(1000);
-//      }
+
+      //      for(int i = 0; i < 3; ++i)
+      //      {
+      //        Serial.print(".");
+      //        lcd.print(".");
+      //        delay(1000);
+      //      }
       int inputTemp = selectTemp();
-      while(inputTemp < 0) {
+      while (inputTemp < 0) {
         yield();
         inputTemp = selectTemp();
       }
@@ -1117,25 +1161,25 @@ void loop() {
       lcd.print(inputTemp);
       if (inputTemp < 100)
       {
-        lcd.setCursor(3 ,1);
+        lcd.setCursor(3 , 1);
         lcd.print("degrees F");
       }
       else
       {
-        lcd.setCursor(4 ,1);
-        lcd.print("degrees F"); 
+        lcd.setCursor(4 , 1);
+        lcd.print("degrees F");
       }
-      
+
       mix = true;
 
       if (mix)
       {
-//        heaterTemp = thermoArray[0].readFarenheit();
+        //        heaterTemp = thermoArray[0].readFarenheit();
 
-//        heaterTemp = sampleTemp(0);
-//        coolerTemp = sampleTempmp(1);
+        //        heaterTemp = sampleTemp(0);
+        //        coolerTemp = sampleTempmp(1);
 
-        
+
         int choice = 0;
         bool c;
         int stopPoint, diff;
@@ -1143,92 +1187,92 @@ void loop() {
         if (inputTemp >= heaterTemp)
         {
           choice = 1;
-//          Serial.println("Turn on Heater");
-//          snprintf (msg, 75, "RqstHotON", value);
-//          client.publish("topic/1", msg);
-//          delay(1000);
-//          client.loop();
-//          io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
-//          lcd.clear();
-//          lcd.setCursor(0, 0);
-//          lcd.print("Heater: ON");
-//          
-//          while(heaterTemp < inputTemp)
-//          {
-//
-//            yield();
-//            delay(1000);
-//            client.loop();
-//            heaterTemp = sampleTemp(0);
-//            Serial.print("Current heater temp: ");
-//            Serial.println(heaterTemp);
-//          }
-////          client.loop();
-//          Serial.println("Turn off Heater");
-//          snprintf (msg, 75, "RqstHotOFF", value);
-//          client.publish("topic/1", msg);
-//          delay(1000);
-//          client.loop();
-//          delay(1000);
-////          io.digitalWrite(SX1509_RELAY_HEATER, LOW);
-//          
-////          lcd.clear();
-////          lcd.setCursor(0, 0);
-////          lcd.print("Heater: OFF");
-//          
+          //          Serial.println("Turn on Heater");
+          //          snprintf (msg, 75, "RqstHotON", value);
+          //          client.publish("topic/1", msg);
+          //          delay(1000);
+          //          client.loop();
+          //          io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
+          //          lcd.clear();
+          //          lcd.setCursor(0, 0);
+          //          lcd.print("Heater: ON");
+          //
+          //          while(heaterTemp < inputTemp)
+          //          {
+          //
+          //            yield();
+          //            delay(1000);
+          //            client.loop();
+          //            heaterTemp = sampleTemp(0);
+          //            Serial.print("Current heater temp: ");
+          //            Serial.println(heaterTemp);
+          //          }
+          ////          client.loop();
+          //          Serial.println("Turn off Heater");
+          //          snprintf (msg, 75, "RqstHotOFF", value);
+          //          client.publish("topic/1", msg);
+          //          delay(1000);
+          //          client.loop();
+          //          delay(1000);
+          ////          io.digitalWrite(SX1509_RELAY_HEATER, LOW);
+          //
+          ////          lcd.clear();
+          ////          lcd.setCursor(0, 0);
+          ////          lcd.print("Heater: OFF");
+          //
         }
         else if (inputTemp < coolerTemp)
         {
           choice = 2;
-//          Serial.println("Turn on Cooler");
-//          snprintf (msg, 75, "RqstColdON", value);
-//          client.publish("topic/1", msg);
-////          delay(5000);
-////          client.loop();
-////          io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
-////          lcd.clear();
-////          lcd.setCursor(0, 0);
-////          lcd.print("Cooler: ON");
-//          
-//          while(coolerTemp > inputTemp)
-//          {
-//            yield();
-//            delay(1000);
-//            client.loop();
-//            coolerTemp = sampleTemp(1);
-//            Serial.print("Current cooler temp: ");
-//            Serial.println(coolerTemp);
-//          }
-//          Serial.println("Turn off Cooler");
-//          snprintf (msg, 75, "RqstColdOFF", value);
-//          client.publish("topic/1", msg);
-//          delay(1000);
-//          client.loop();
-//          delay(1000);
-////          io.digitalWrite(SX1509_RELAY_COOLER, LOW);
-////          lcd.clear();
-////          lcd.setCursor(0, 0);
-////          lcd.print("Cooler: OFF");
+          //          Serial.println("Turn on Cooler");
+          //          snprintf (msg, 75, "RqstColdON", value);
+          //          client.publish("topic/1", msg);
+          ////          delay(5000);
+          ////          client.loop();
+          ////          io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
+          ////          lcd.clear();
+          ////          lcd.setCursor(0, 0);
+          ////          lcd.print("Cooler: ON");
+          //
+          //          while(coolerTemp > inputTemp)
+          //          {
+          //            yield();
+          //            delay(1000);
+          //            client.loop();
+          //            coolerTemp = sampleTemp(1);
+          //            Serial.print("Current cooler temp: ");
+          //            Serial.println(coolerTemp);
+          //          }
+          //          Serial.println("Turn off Cooler");
+          //          snprintf (msg, 75, "RqstColdOFF", value);
+          //          client.publish("topic/1", msg);
+          //          delay(1000);
+          //          client.loop();
+          //          delay(1000);
+          ////          io.digitalWrite(SX1509_RELAY_COOLER, LOW);
+          ////          lcd.clear();
+          ////          lcd.setCursor(0, 0);
+          ////          lcd.print("Cooler: OFF");
         }
         else
         {
           choice = 3;
-          
-//          heaterTemp = sampleTemp(0);
-//          coolerTemp = sampleTemp(1);
-//          mixTemp = sampleTemp(2);
-          
+
+          //          heaterTemp = sampleTemp(0);
+          //          coolerTemp = sampleTemp(1);
+          //          mixTemp = sampleTemp(2);
+
           hotPortion = inputTemp - coolerTemp;
           coldPortion = heaterTemp - inputTemp;
           int gcdr = gcd(hotPortion, coldPortion);
           hotPortion = hotPortion / gcdr;
           coldPortion = coldPortion / gcdr;
 
-          
+
           Serial.print("Heater Temp = "); Serial.print(heaterTemp); Serial.print(" Hot Portion = "); Serial.println(hotPortion);
           Serial.print("Cooler Temp = "); Serial.print(coolerTemp); Serial.print(" Cold Portion = "); Serial.println(coldPortion);
           Serial.print("Mix Temp = "); Serial.println(mixTemp);
-          
+
           if (hotPortion > coldPortion)
           {
             stopPoint = hotPortion;
@@ -1248,7 +1292,7 @@ void loop() {
         lcd.setCursor(0, 0);
         lcd.print("Ready to Dispense");
         lcd.setCursor(0, 1);
-        while(io.digitalRead(SX1509_RELEASE_BUTTON))
+        while (io.digitalRead(SX1509_RELEASE_BUTTON))
         {
           delay(1000);
           yield();
@@ -1270,16 +1314,16 @@ void loop() {
           }
         }
 
-        while(!io.digitalRead(SX1509_RELEASE_BUTTON))
+        while (!io.digitalRead(SX1509_RELEASE_BUTTON))
         {
           yield();
-          
+
           lcd.clear();
           lcd.setCursor(0, 0);
           lcd.print("Dispensing Water");
           lcd.setCursor(0, 1);
           lcd.print(".");
-          
+
           if (choice == 1)
           {
             Serial.println("Open Hot Solenoid");
@@ -1292,39 +1336,39 @@ void loop() {
           }
           else if (choice == 3)
           {
-            if(mixTemp > inputTemp)
+            if (mixTemp > inputTemp)
             {
               Serial.println("\nOpen Cold Solenoid");
               io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
-              delay(stopPoint* 200/hotPortion);
+              delay(stopPoint * 200 / hotPortion);
             }
             else
             {
               Serial.println("\nOpen Hot Solenoid");
               io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
-              delay(stopPoint* 200/coldPortion);
+              delay(stopPoint * 200 / coldPortion);
             }
-            
+
             Serial.println("\nOpen Hot Solenoid");
             io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
             Serial.println("Open Cold Solenoid");
             io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
-//            delay(stopPoint * 500);
+            //            delay(stopPoint * 500);
             if (c)
             {
-              delay(stopPoint* 500/hotPortion);
+              delay(stopPoint * 500 / hotPortion);
               Serial.println("Close Cold Solenoid");
               io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
-              delay(diff * 500/hotPortion);
+              delay(diff * 500 / hotPortion);
             }
             else
             {
-              delay(stopPoint* 500/coldPortion);
+              delay(stopPoint * 500 / coldPortion);
               Serial.println("Close Hot Solenoid");
               io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
-              delay(diff * 500/coldPortion);
+              delay(diff * 500 / coldPortion);
             }
-            
+
 
           }
           else if (choice == 0)
@@ -1345,26 +1389,31 @@ void loop() {
   if (idle)
   {
     Serial.println("Standby Mode");
-    
+
+
+    pwm.setPWM(5, 4096, 0);
+    pwm.setPWM(6, 2048, 0);
+    pwm.setPWM(7, 0, 4096);
+
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Standby Mode");
-    
+
     Serial.print("HEATER: ");
     control(true, SX1509_RELAY_HEATER, 0);
     Serial.print("COOLER: ");
     control(false, SX1509_RELAY_COOLER, 1);
-    Serial.print("MIXER: ");
-    control(false, SX1509_RELAY_COOLER, 3);
-    
+    //    Serial.print("MIXER: ");
+    //    control(false, SX1509_RELAY_COOLER, 3);
 
-    if(detectMotion())
+
+    if (detectMotion())
     {
       Serial.println("Motion Detected. Reset1111111111111");
 
       io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
       io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
-      
+
       operate = true;
       idle = false;
       sleep = false;
@@ -1375,14 +1424,14 @@ void loop() {
     else
     {
       Serial.println("HERE");
-      
+
       unsigned long currentMillis;
       delay(1000);
 
       currentMillis = millis();
-      
+
       Serial.print("Current time: ");
-      Serial.println(currentMillis-previousMillis);
+      Serial.println(currentMillis - previousMillis);
 
       if (currentMillis - previousMillis >= 1800000)
       {
@@ -1394,11 +1443,11 @@ void loop() {
 
         snprintf (msg, 75, "RqstColdOFF", value);
         client.publish("topic/1", msg);
-        
+
         sleep = true;
         operate = false;
         idle = false;
-        
+
         return;
       }
     }
@@ -1407,30 +1456,35 @@ void loop() {
   if (sleep)
   {
 
+    pwm.setPWM(5, 0, 4096);
+    pwm.setPWM(6, 0, 4096);
+    pwm.setPWM(7, 0, 4096);
+
+
     Serial.println("Sleep Mode");
-  
+
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Sleep Mode");
-    
-    if(detectMotion())
+
+    if (detectMotion())
     {
       Serial.println("Motion Detected. Reset2222222222");
-      
-//      Serial.print("HEATER: ");
-//      control(true, SX1509_RELAY_HEATER, 0);
-//      Serial.print("COOLER: ");
-//      control(false, SX1509_RELAY_COOLER, 1);
-//      Serial.print("MIXER: ");
-//      control(false, SX1509_RELAY_COOLER, 3);
+
+      //      Serial.print("HEATER: ");
+      //      control(true, SX1509_RELAY_HEATER, 0);
+      //      Serial.print("COOLER: ");
+      //      control(false, SX1509_RELAY_COOLER, 1);
+      //      Serial.print("MIXER: ");
+      //      control(false, SX1509_RELAY_COOLER, 3);
 
       io.digitalWrite(SX1509_RELAY_HEATER, HIGH);
       io.digitalWrite(SX1509_RELAY_COOLER, HIGH);
-      
+
       operate = true;
       sleep = false;
       idle = false;
-     
+
       return;
     }
   }
