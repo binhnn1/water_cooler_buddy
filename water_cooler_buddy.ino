@@ -206,20 +206,16 @@ void reconnect() {
     Serial.print("Attempting a conenection to MQTT...");
     lcd.print(".");
     pwm.setPWM(8, 4096, 0);
-    pwm.setPWM(9, 2048, 0);
-    pwm.setPWM(10, 0, 4096);
-    delay(500);
-    pwm.setPWM(8, 0, 4096);
-    pwm.setPWM(9, 0, 4096);
-    pwm.setPWM(10, 0, 4096);
+//    pwm.setPWM(9, 2048, 0);
+//    pwm.setPWM(10, 0, 4096);
     if (client.connect("ESP8266Client", emem.getMqttUser().c_str(), emem.getMqttPwd().c_str())) {
       lcd.clear();
       lcd.setCursor(0, 0);
 
-      pwm.setPWM(8, 0, 4096);
-      pwm.setPWM(9, 0, 4096);
-      pwm.setPWM(10, 1024, 0);
-      
+//      pwm.setPWM(8, 0, 4096);
+//      pwm.setPWM(9, 0, 4096);
+      pwm.setPWM(10, 4096, 0);
+
       lcd.print("Connected");
       Serial.println("connected");
       client.publish("topic/1", "publishing-yes");
@@ -229,6 +225,9 @@ void reconnect() {
       Serial.print(client.state());
       Serial.println(" will try connecting again in 5 secs");
       delay(5000);
+      pwm.setPWM(8, 0, 4096);
+//      pwm.setPWM(9, 0, 4096);
+//      pwm.setPWM(10, 0, 4096);
     }
   }
 }
@@ -611,21 +610,19 @@ void setup()
   //  WiFi.begin("iPhone", "123456789");
   yield();
   for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
-    pwm.setPWM(8, 4096, 0);
-    pwm.setPWM(9, 2048, 0);
-    pwm.setPWM(10, 0, 4096);
+    
+    pwm.setPWM(9, 4096, 0);
     delay(500);
-    pwm.setPWM(8, 0, 4096);
     pwm.setPWM(9, 0, 4096);
-    pwm.setPWM(10, 0, 4096);
+    
     Serial.print(".");
     lcd.print(".");
     if (c == 30) {
 
 
       pwm.setPWM(8, 4096, 0);
-      pwm.setPWM(9, 0, 4096);
-      pwm.setPWM(10, 0, 4096);
+//      pwm.setPWM(9, 0, 4096);
+//      pwm.setPWM(10, 0, 4096);
 
       Serial.println();
       Serial.println("Connection Time Out...");
@@ -665,9 +662,9 @@ void setup()
 
   Serial.println("connected");
 
-  pwm.setPWM(8, 0, 4096);
-  pwm.setPWM(9, 0, 4096);
-  pwm.setPWM(10, 1024, 0);
+//  pwm.setPWM(8, 0, 4096);
+//  pwm.setPWM(9, 0, 4096);
+  pwm.setPWM(10, 4096, 0);
 
   lcd.setCursor(0, 0);
   lcd.print("Connected");
