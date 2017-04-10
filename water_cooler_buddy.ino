@@ -209,7 +209,7 @@ void reconnect() {
       lcd.clear();
       lcd.setCursor(0, 0);
 
-      pwm.setPWM(10, 4095, 0);
+      pwm.setPWM(9, 4095, 0);
 
       lcd.print("Connected");
       Serial.println("connected");
