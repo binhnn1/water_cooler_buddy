@@ -475,7 +475,7 @@ bool detectMotion()
     lcd.print("Detected Motion:");
     lcd.setCursor(0, 1);
     lcd.print("Front");
-    delay(2000);
+    delay(1000);
     return true;
   }
 
@@ -485,8 +485,8 @@ bool detectMotion()
     lcd.setCursor(0, 0);
     lcd.print("Detected Motion:");
     lcd.setCursor(0, 1);
-    lcd.print("Front");
-    delay(2000);
+    lcd.print("Left");
+    delay(1000);
     return true;
   }
 
@@ -496,8 +496,8 @@ bool detectMotion()
     lcd.setCursor(0, 0);
     lcd.print("Detected Motion:");
     lcd.setCursor(0, 1);
-    lcd.print("Front");
-    delay(2000);
+    lcd.print("Right");
+    delay(1000);
     return true;
   }
   return false;
@@ -673,7 +673,7 @@ void setup()
   delay(200);
   SPI.begin();
   delay(200);
-//  myADE7953.initialize();
+  //  myADE7953.initialize();
 
   //  WiFiClient client;
   //  if (!client.connect(host, httpPort)) {
@@ -890,7 +890,7 @@ double sampleTemp(int j)
   return sum / (double)sampleLoop;
 }
 
-bool flag = false;
+//bool flag = false;
 String readString;
 
 
@@ -1286,6 +1286,8 @@ void loop() {
             idle = true;
             operate = false;
             sleep = false;
+
+            previousMillis = millis();
             return;
           }
         }
@@ -1375,13 +1377,6 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print("Standby Mode");
 
-    Serial.print("HEATER: ");
-    control(true, SX1509_RELAY_HEATER, 0);
-    Serial.print("COOLER: ");
-    control(false, SX1509_RELAY_COOLER, 1);
-    //    Serial.print("MIXER: ");
-    //    control(false, SX1509_RELAY_COOLER, 3);
-
 
     if (detectMotion())
     {
@@ -1394,17 +1389,16 @@ void loop() {
       idle = false;
       sleep = false;
 
-      flag = true;
+      //      flag = true;
       return;
     }
     else
     {
       Serial.println("HERE");
 
-      unsigned long currentMillis;
       delay(1000);
 
-      currentMillis = millis();
+      unsigned long currentMillis = millis();
 
       Serial.print("Current time: ");
       Serial.println(currentMillis - previousMillis);
@@ -1427,6 +1421,14 @@ void loop() {
         return;
       }
     }
+
+    Serial.print("HEATER: ");
+    control(true, SX1509_RELAY_HEATER, 0);
+    Serial.print("COOLER: ");
+    control(false, SX1509_RELAY_COOLER, 1);
+    //    Serial.print("MIXER: ");
+    //    control(false, SX1509_RELAY_COOLER, 3);
+
   }
 
   if (sleep)
