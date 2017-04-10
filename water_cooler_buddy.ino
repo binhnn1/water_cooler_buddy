@@ -1244,7 +1244,7 @@ void loop() {
           ////          lcd.print("Heater: OFF");
           //
         }
-        else if (inputTemp < coolerTemp)
+        else if (inputTemp <= coolerTemp)
         {
           choice = 2;
           //          Serial.println("Turn on Cooler");
@@ -1294,7 +1294,18 @@ void loop() {
 
           Serial.print("Heater Temp = "); Serial.print(heaterTemp); Serial.print(" Hot Portion = "); Serial.println(hotPortion);
           Serial.print("Cooler Temp = "); Serial.print(coolerTemp); Serial.print(" Cold Portion = "); Serial.println(coldPortion);
-          Serial.print("Mix Temp = "); Serial.println(mixTemp);
+          //          Serial.print("Mix Temp = "); Serial.println(mixTemp);
+
+          if (hotPortion == 0 || coldPortion == 0)
+          {
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("ERROR CODE: 01");
+            lcd.setCursor(1, 0);
+            lcd.print("REBOOT...");
+            delay(1000);
+            return;
+          }
 
           if (hotPortion > coldPortion)
           {
@@ -1317,8 +1328,8 @@ void loop() {
         lcd.setCursor(0, 1);
         while (io.digitalRead(SX1509_RELEASE_BUTTON))
         {
-          delay(1000);
           yield();
+          delay(1000);
           ++i;
           Serial.print(".");
           lcd.print(".");
@@ -1342,6 +1353,8 @@ void loop() {
         while (!io.digitalRead(SX1509_RELEASE_BUTTON))
         {
           yield();
+
+          pwm.setPWM(6, 4096, 0);
 
           lcd.clear();
           lcd.setCursor(0, 0);
@@ -1394,7 +1407,7 @@ void loop() {
               delay(diff * 500 / coldPortion);
             }
 
-
+            pwm.setPWM(6, 0, 4096);
           }
           else if (choice == 0)
           {
