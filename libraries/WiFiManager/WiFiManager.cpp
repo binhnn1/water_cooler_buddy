@@ -163,6 +163,12 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
 
       // using user-provided  _ssid, _pass in place of system-stored ssid and pass
       if (connectWifi(_ssid, _pass) != WL_CONNECTED) {
+	for(int i = 0; i <= 30 ;++i) {
+		Serial.print(".");
+		delay(1000);
+		connectWifi(_ssid, _pass);
+			
+	}
         DEBUG_WM(F("Failed to connect."));
       } else {
         //connected

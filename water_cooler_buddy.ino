@@ -1,13 +1,13 @@
 #include <Adafruit_MAX31855.h>
 #include <Adafruit_PWMServoDriver.h>
-#include <Adafruit_TLC59711.h>
+//#include <Adafruit_TLC59711.h>
 #include <DNSServer.h>
 #include <EMem.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <LiquidCrystal_I2C.h>
 #include <PubSubClient.h>
-#include <RTC_DS3231.h>
+//#include <RTC_DS3231.h>
 #include <SparkFunSX1509.h>
 #include <SPI.h>
 #include <WiFiManager.h>
@@ -95,7 +95,7 @@ char* mqtt_pwd = "GCGrhTnLhphv";
 /***************************************************************************************/
 EMem emem;
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
-RTC_DS3231 rtc(0x68);
+//RTC_DS3231 rtc(0x68);
 SX1509 io;
 WiFiManager wifiManager;
 WiFiClient espClient;
