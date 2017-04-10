@@ -1,6 +1,5 @@
 #include <Adafruit_MAX31855.h>
 #include <Adafruit_PWMServoDriver.h>
-//#include <Adafruit_TLC59711.h>
 #include <DNSServer.h>
 #include <EMem.h>
 #include <ESP8266WebServer.h>
