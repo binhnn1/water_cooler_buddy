@@ -11,7 +11,7 @@
 #include <SPI.h>
 #include <WiFiManager.h>
 #include <Wire.h>
-#include <ADE7953.h>
+#include <ADE7953.h>s
 #include <Button.h>
 unsigned long lastTime = 0;
 unsigned long currentTime = 0;
@@ -204,16 +204,12 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting a conenection to MQTT...");
     lcd.print(".");
-    pwm.setPWM(8, 4096, 0);
-//    pwm.setPWM(9, 2048, 0);
-//    pwm.setPWM(10, 0, 4096);
+    pwm.setPWM(10, 4095, 0);
     if (client.connect("ESP8266Client", emem.getMqttUser().c_str(), emem.getMqttPwd().c_str())) {
       lcd.clear();
       lcd.setCursor(0, 0);
 
-//      pwm.setPWM(8, 0, 4096);
-//      pwm.setPWM(9, 0, 4096);
-      pwm.setPWM(10, 4096, 0);
+      pwm.setPWM(10, 4095, 0);
 
       lcd.print("Connected");
       Serial.println("connected");
@@ -222,11 +218,9 @@ void reconnect() {
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
-      Serial.println(" will try connecting again in 5 secs");
-      delay(5000);
-      pwm.setPWM(8, 0, 4096);
-//      pwm.setPWM(9, 0, 4096);
-//      pwm.setPWM(10, 0, 4096);
+      Serial.println(" will try connecting again in 2 secs");
+      delay(2000);
+      pwm.setPWM(10, 0, 4095);
     }
   }
 }
@@ -325,26 +319,26 @@ int selectTemp()
         if (encoder0Pos >= heaterTemp)
         {
           encoder0Pos = heaterTemp;
-          pwm.setPWM(1, 4096, 0);
-          pwm.setPWM(0, 4096, 0);
+          pwm.setPWM(1, 4095, 0);
+          pwm.setPWM(0, 4095, 0);
           delay(500);
-          pwm.setPWM(1, 0, 4096);
-          pwm.setPWM(0, 0, 4096);
+          pwm.setPWM(1, 0, 4095);
+          pwm.setPWM(0, 0, 4095);
           delay(500);
-          pwm.setPWM(1, 4096, 0);
-          pwm.setPWM(0, 4096, 0);
+          pwm.setPWM(1, 4095, 0);
+          pwm.setPWM(0, 4095, 0);
         }
         else if (encoder0Pos <= coolerTemp)
         {
           encoder0Pos = coolerTemp;
-          pwm.setPWM(4, 4096, 0);
-          pwm.setPWM(3, 4096, 0);
+          pwm.setPWM(4, 4095, 0);
+          pwm.setPWM(3, 4095, 0);
           delay(500);
-          pwm.setPWM(4, 0, 4096);
-          pwm.setPWM(3, 0, 4096);
+          pwm.setPWM(4, 0, 4095);
+          pwm.setPWM(3, 0, 4095);
           delay(500);
-          pwm.setPWM(4, 4096, 0);
-          pwm.setPWM(3, 4096, 0);
+          pwm.setPWM(4, 4095, 0);
+          pwm.setPWM(3, 4095, 0);
         }
         else
         {
@@ -352,43 +346,43 @@ int selectTemp()
           Serial.println(a);
           if (a < 4)
           {
-            pwm.setPWM(4, (a - 1) * (4096 / 2), 0);
-            pwm.setPWM(3, 0, 4096);
-            pwm.setPWM(2, 0, 4096);
-            pwm.setPWM(1, 0, 4096);
-            pwm.setPWM(0, 0, 4096);
+            pwm.setPWM(4, (a - 1) * (4095 / 2), 0);
+            pwm.setPWM(3, 0, 4095);
+            pwm.setPWM(2, 0, 4095);
+            pwm.setPWM(1, 0, 4095);
+            pwm.setPWM(0, 0, 4095);
           }
           else if (a < 6)
           {
-            pwm.setPWM(4, 4096, 0);
-            pwm.setPWM(3, (a - 3) * (4096 / 2), 0);
-            pwm.setPWM(2, 0, 4096);
-            pwm.setPWM(1, 0, 4096);
-            pwm.setPWM(0, 0, 4096);
+            pwm.setPWM(4, 4095, 0);
+            pwm.setPWM(3, (a - 3) * (4095 / 2), 0);
+            pwm.setPWM(2, 0, 4095);
+            pwm.setPWM(1, 0, 4095);
+            pwm.setPWM(0, 0, 4095);
           }
           else if (a < 8)
           {
-            pwm.setPWM(4, 4096, 0);
-            pwm.setPWM(3, 4096, 0);
-            pwm.setPWM(2, (a - 5) * (4096 / 2), 0);
-            pwm.setPWM(1, 0, 4096);
-            pwm.setPWM(0, 0, 4096);
+            pwm.setPWM(4, 4095, 0);
+            pwm.setPWM(3, 4095, 0);
+            pwm.setPWM(2, (a - 5) * (4095 / 2), 0);
+            pwm.setPWM(1, 0, 4095);
+            pwm.setPWM(0, 0, 4095);
           }
           else if (a < 10)
           {
-            pwm.setPWM(4, 4096, 0);
-            pwm.setPWM(3, 4096, 0);
-            pwm.setPWM(2, 4096, 0);
-            pwm.setPWM(1, (a - 7) * (4096 / 2), 0);
-            pwm.setPWM(0, 0, 4096);
+            pwm.setPWM(4, 4095, 0);
+            pwm.setPWM(3, 4095, 0);
+            pwm.setPWM(2, 4095, 0);
+            pwm.setPWM(1, (a - 7) * (4095 / 2), 0);
+            pwm.setPWM(0, 0, 4095);
           }
           else if (a < 12)
           {
-            pwm.setPWM(4, 4096, 0);
-            pwm.setPWM(3, 4096, 0);
-            pwm.setPWM(2, 4096, 0);
-            pwm.setPWM(1, 4096, 0);
-            pwm.setPWM(0, (a - 9) * (4096 / 2), 0);
+            pwm.setPWM(4, 4095, 0);
+            pwm.setPWM(3, 4095, 0);
+            pwm.setPWM(2, 4095, 0);
+            pwm.setPWM(1, 4095, 0);
+            pwm.setPWM(0, (a - 9) * (4095 / 2), 0);
           }
         }
         Serial.println(encoder0Pos, DEC);
@@ -435,23 +429,23 @@ int selectTemp()
       if (!io.digitalRead(encoder0Select))
       {
         pwm.setPWMFreq(1000);
-        pwm.setPWM(4, 4096, 0);
-        pwm.setPWM(3, 4096, 0);
-        pwm.setPWM(2, 4096, 0);
-        pwm.setPWM(1, 4096, 0);
-        pwm.setPWM(0, 4096, 0);
+        pwm.setPWM(4, 4095, 0);
+        pwm.setPWM(3, 4095, 0);
+        pwm.setPWM(2, 4095, 0);
+        pwm.setPWM(1, 4095, 0);
+        pwm.setPWM(0, 4095, 0);
         delay(500);
-        pwm.setPWM(4, 0, 4096);
-        pwm.setPWM(3, 0, 4096);
-        pwm.setPWM(2, 0, 4096);
-        pwm.setPWM(1, 0, 4096);
-        pwm.setPWM(0, 0, 4096);
+        pwm.setPWM(4, 0, 4095);
+        pwm.setPWM(3, 0, 4095);
+        pwm.setPWM(2, 0, 4095);
+        pwm.setPWM(1, 0, 4095);
+        pwm.setPWM(0, 0, 4095);
         delay(500);
-        pwm.setPWM(4, 0, 4096);
-        pwm.setPWM(3, 0, 4096);
-        pwm.setPWM(2, 0, 4096);
-        pwm.setPWM(1, 0, 4096);
-        pwm.setPWM(0, 0, 4096);
+        pwm.setPWM(4, 0, 4095);
+        pwm.setPWM(3, 0, 4095);
+        pwm.setPWM(2, 0, 4095);
+        pwm.setPWM(1, 0, 4095);
+        pwm.setPWM(0, 0, 4095);
         return encoder0Pos;
       }
     }
@@ -577,17 +571,17 @@ void setup()
   pwm.begin();
   pwm.setPWMFreq(1000);
 
-  pwm.setPWM(0, 0, 4096);
-  pwm.setPWM(1, 0, 4096);
-  pwm.setPWM(2, 0, 4096);
-  pwm.setPWM(3, 0, 4096);
-  pwm.setPWM(4, 0, 4096);
-  pwm.setPWM(5, 0, 4096);
-  pwm.setPWM(6, 0, 4096);
-  pwm.setPWM(7, 0, 4096);
-  pwm.setPWM(8, 0, 4096);
-  pwm.setPWM(9, 0, 4096);
-  pwm.setPWM(10, 0, 4096);
+  pwm.setPWM(0, 0, 4095);
+  pwm.setPWM(1, 0, 4095);
+  pwm.setPWM(2, 0, 4095);
+  pwm.setPWM(3, 0, 4095);
+  pwm.setPWM(4, 0, 4095);
+  pwm.setPWM(5, 0, 4095);
+  pwm.setPWM(6, 0, 4095);
+  pwm.setPWM(7, 0, 4095);
+  pwm.setPWM(8, 0, 4095);
+  pwm.setPWM(9, 0, 4095);
+  pwm.setPWM(10, 0, 4095);
 
 
 
@@ -609,19 +603,17 @@ void setup()
   //  WiFi.begin("iPhone", "123456789");
   yield();
   for (int c = 0; c <= 30 and WiFi.status() != WL_CONNECTED; ++c) {
-    
-    pwm.setPWM(9, 4096, 0);
+
+    pwm.setPWM(10, 4095, 0);
     delay(500);
-    pwm.setPWM(9, 0, 4096);
-    
+    pwm.setPWM(10, 0, 4095);
+
     Serial.print(".");
     lcd.print(".");
     if (c == 30) {
 
 
-      pwm.setPWM(8, 4096, 0);
-//      pwm.setPWM(9, 0, 4096);
-//      pwm.setPWM(10, 0, 4096);
+      pwm.setPWM(8, 4095, 0);
 
       Serial.println();
       Serial.println("Connection Time Out...");
@@ -661,9 +653,7 @@ void setup()
 
   Serial.println("connected");
 
-//  pwm.setPWM(8, 0, 4096);
-//  pwm.setPWM(9, 0, 4096);
-  pwm.setPWM(10, 4096, 0);
+  pwm.setPWM(9, 4095, 0);
 
   lcd.setCursor(0, 0);
   lcd.print("Connected");
@@ -675,15 +665,6 @@ void setup()
 
 
 
-
-
-
-  //  pwm.setPWM(4, 4096, 0);
-  //  pwm.setPWM(3, 4096, 0);
-  //  pwm.setPWM(2, 4096, 0);
-  //  pwm.setPWM(1, 4096, 0);
-  //  pwm.setPWM(0, 4096, 0);
-
   RequestRelayHotOn = "RqstHotON";
   RequestRelayHotOff = "RqstHotOFF";
   RequestRelayColdOn = "RqstColdON";
@@ -694,27 +675,27 @@ void setup()
   delay(200);
   myADE7953.initialize();
 
-  WiFiClient client;
-  if (!client.connect(host, httpPort)) {
-    Serial.println("connection failed");
-    return;
-  }
-
-  client.print(String("POST ") + url + "?energy=setup" + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "Connection: close\r\n\r\n");
-  delay(10);
-
-  Serial.print("Setup Respond:");
-  int c = 0;
-  while (client.available()) {
-    String line = client.readStringUntil('\r');
-    ++c;
-    if (c >= 8 ) {
-      Serial.print(line);
-      lastEnergy = line.toFloat();
-    }
-  }
+  //  WiFiClient client;
+  //  if (!client.connect(host, httpPort)) {
+  //    Serial.println("connection failed");
+  //    return;
+  //  }
+  //
+  //  client.print(String("POST ") + url + "?energy=setup" + " HTTP/1.1\r\n" +
+  //               "Host: " + host + "\r\n" +
+  //               "Connection: close\r\n\r\n");
+  //  delay(10);
+  //
+  //  Serial.print("Setup Respond:");
+  //  int c = 0;
+  //  while (client.available()) {
+  //    String line = client.readStringUntil('\r');
+  //    ++c;
+  //    if (c >= 8 ) {
+  //      Serial.print(line);
+  //      lastEnergy = line.toFloat();
+  //    }
+  //  }
 
 }
 
@@ -1070,10 +1051,9 @@ void loop() {
   if (operate)
   {
 
-    pwm.setPWM(5, 0, 4096);
-    pwm.setPWM(6, 0, 4096);
-    pwm.setPWM(7, 1028, 0);
-
+    pwm.setPWM(5, 0, 4095);
+    pwm.setPWM(6, 4095, 0);
+    pwm.setPWM(7, 0, 4095);
 
     Serial.println("Operating Mode");
 
@@ -1323,45 +1303,45 @@ void loop() {
           if (choice == 1)
           {
             Serial.println("Open Hot Solenoid");
-            io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
+            io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
           }
           else if (choice == 2)
           {
             Serial.println("Open Cold Solenoid");
-            io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
+            io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
           }
           else if (choice == 3)
           {
             if (mixTemp > inputTemp)
             {
               Serial.println("\nOpen Cold Solenoid");
-              io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
+              io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
               delay(stopPoint * 200 / hotPortion);
             }
             else
             {
               Serial.println("\nOpen Hot Solenoid");
-              io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
+              io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
               delay(stopPoint * 200 / coldPortion);
             }
 
             Serial.println("\nOpen Hot Solenoid");
-            io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
+            io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
             Serial.println("Open Cold Solenoid");
-            io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
+            io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
             //            delay(stopPoint * 500);
             if (c)
             {
               delay(stopPoint * 500 / hotPortion);
               Serial.println("Close Cold Solenoid");
-              io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
+              io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
               delay(diff * 500 / hotPortion);
             }
             else
             {
               delay(stopPoint * 500 / coldPortion);
               Serial.println("Close Hot Solenoid");
-              io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
+              io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
               delay(diff * 500 / coldPortion);
             }
 
@@ -1374,8 +1354,8 @@ void loop() {
         }
         Serial.println("Close Cold Solenoid");
         Serial.println("Close Hot Solenoid");
-        io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
-        io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
+        io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
+        io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
         lcd.clear();
       }
     }
@@ -1387,9 +1367,9 @@ void loop() {
     Serial.println("Standby Mode");
 
 
-    pwm.setPWM(5, 4096, 0);
-    pwm.setPWM(6, 2048, 0);
-    pwm.setPWM(7, 0, 4096);
+    pwm.setPWM(5, 0, 4095);
+    pwm.setPWM(6, 0, 4095);
+    pwm.setPWM(7, 4095, 0);
 
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -1452,9 +1432,9 @@ void loop() {
   if (sleep)
   {
 
-    pwm.setPWM(5, 0, 4096);
-    pwm.setPWM(6, 0, 4096);
-    pwm.setPWM(7, 0, 4096);
+    pwm.setPWM(5, 0, 4095);
+    pwm.setPWM(6, 0, 4095);
+    pwm.setPWM(7, 0, 4095);
 
 
     Serial.println("Sleep Mode");
