@@ -15,11 +15,11 @@
 #include <Button.h>
 //unsigned long lastTime = 0;
 //unsigned long currentTime = 0;
-float lastEnergy = 0;
-float currentEnergy = 0;
-const char* host = "52.53.184.247";
-const int httpPort = 8080;
-String url = "/Test/page1";
+//float lastEnergy = 0;
+//float currentEnergy = 0;
+//const char* host = "52.53.184.247";
+//const int httpPort = 8080;
+//String url = "/Test/page1";
 //#define thresH 135
 //#define thresC 60
 #define sampleLoop 10
@@ -36,9 +36,9 @@ const byte SX1509_ADDRESS = 0x3E;
 #define encoder0PinB  6
 #define encoder0Select 7
 
-#define SX1509_RELEASE_BUTTON 8
-#define SX1509_SOLENOID_HOT 9
-#define SX1509_SOLENOID_COLD 10
+#define SX1509_RELEASE_BUTTON 12
+#define SX1509_SOLENOID_HOT 10
+#define SX1509_SOLENOID_COLD 9
 
 
 //#define RESET_WIFI_BUTTON 15        // D8
@@ -51,8 +51,8 @@ const byte SX1509_ADDRESS = 0x3E;
 #define heaterThreshold 160
 #define coolerThreshold 45
 /********************************SETUP FOR THERMOCOUPLES********************************/
-#define MAXDO 0
-#define MAXCLK 2
+#define MAXDO 0       // D3
+#define MAXCLK 2      // D4
 #define MAXCS0 14     // D5
 #define MAXCS1 12     // D6
 #define MAXCS2 13     // D7
@@ -304,7 +304,7 @@ int selectTemp()
     yield();
     unsigned long currentMillis = millis();
 
-    if (currentMillis - previousMillis >= 3)
+    if (currentMillis - previousMillis >= 1)
     {
       previousMillis = currentMillis;
       n = io.digitalRead(encoder0PinA);
@@ -1309,13 +1309,13 @@ void loop() {
 
           if (hotPortion > coldPortion)
           {
-            stopPoint = hotPortion;
+            stopPoint = coldPortion;
             diff = hotPortion - coldPortion;
             c = true;
           }
           else
           {
-            stopPoint = coldPortion;
+            stopPoint = hotPortion;
             diff = coldPortion - hotPortion;
             c = false;
           }
@@ -1374,18 +1374,18 @@ void loop() {
           }
           else if (choice == 3)
           {
-            if (mixTemp > inputTemp)
-            {
-              Serial.println("\nOpen Cold Solenoid");
-              io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
-              delay(stopPoint * 200 / hotPortion);
-            }
-            else
-            {
-              Serial.println("\nOpen Hot Solenoid");
-              io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
-              delay(stopPoint * 200 / coldPortion);
-            }
+//            if (mixTemp > inputTemp)
+//            {
+//              Serial.println("\nOpen Cold Solenoid");
+//              io.digitalWrite(SX1509_SOLENOID_COLD, LOW);
+//              delay(stopPoint * 200 / hotPortion);
+//            }
+//            else
+//            {
+//              Serial.println("\nOpen Hot Solenoid");
+//              io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
+//              delay(stopPoint * 200 / coldPortion);
+//            }
 
             Serial.println("\nOpen Hot Solenoid");
             io.digitalWrite(SX1509_SOLENOID_HOT, LOW);
@@ -1394,20 +1394,19 @@ void loop() {
             //            delay(stopPoint * 500);
             if (c)
             {
-              delay(stopPoint * 500 / hotPortion);
+              delay(stopPoint * 1000 / hotPortion);
               Serial.println("Close Cold Solenoid");
               io.digitalWrite(SX1509_SOLENOID_COLD, HIGH);
-              delay(diff * 500 / hotPortion);
+              delay(diff * 1000 / hotPortion);
             }
             else
             {
-              delay(stopPoint * 500 / coldPortion);
+              delay(stopPoint * 1000 / coldPortion);
               Serial.println("Close Hot Solenoid");
               io.digitalWrite(SX1509_SOLENOID_HOT, HIGH);
-              delay(diff * 500 / coldPortion);
+              delay(diff * 1000 / coldPortion);
             }
 
-            pwm.setPWM(6, 0, 4096);
           }
           else if (choice == 0)
           {
