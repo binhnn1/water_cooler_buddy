@@ -1,9 +1,21 @@
+*LED connect to PWM Servo Driver
+Blue(1) - Blue(2) - Yellow - Red(1) - Red(2)
+Blue(1) - PWM4
+blue(2) - PWM3
+Yellow - PWM2
+Red(1) - PWM1
+Red(0) - PWM0
+
+Status RGB - PWM 5 6 7
+Wifi RGB - PWM 8 9 10
+
+
 *ESP8266:
 A0 - PDN
 EN - PUN
 D0 - MAXCS1
-D1 - SCL (LCD, SX1509, feather)
-D2 - SDA (LCD, SX1509, feather)
+D1 - SCL (LCD, SX1509)
+D2 - SDA (LCD, SX1509)
 D3 - MAXDO
 D4 - MAXCLK
 D5 - MAXCS0
@@ -16,31 +28,31 @@ D7 - MAXCS2
 // Thermocouples (x3)
 // 3 thermocouples share MAXDO, MAXCLK, only need seperate MAXCS
 D3 - MAXDO
-D9 - MAXCS0
-D0 - MAXCS1
-//D0 - MAXCS2
+D5 - MAXCS0
+D6 - MAXCS1
+D7 - MAXCS2
 D4 - MAXCLK
 
 *Thermocouple0
 Vcc
 Gnd
 MAXDO - D3 (ESP8266)
-MAXCS0 - D9 (ESP8266)
+MAXCS0 - D5 (ESP8266)
 MAXCLK - D4 (ESP8266)
 
 *Thermocouple1
 Vcc
 Gnd
 MAXDO - D3 (ESP8266)
-MAXCS1 - D0 (ESP8266)
+MAXCS1 - D6 (ESP8266)
 MAXCLK - D4 (ESP8266)
 
-//*Thermocouple2
-//Vcc
-//Gnd
-//MAXDO - D6 (ESP8266)
-//MAXCS0 - D0 (ESP8266)
-//MAXCLK - D9 (ESP8266)
+*Thermocouple2
+Vcc
+Gnd
+MAXDO - D3 (ESP8266)
+MAXCS2 - D7 (ESP8266)
+MAXCLK - D4 (ESP8266)
 
 
 *LCD
@@ -54,16 +66,28 @@ Vcc
 Gnd
 SCL - D1 (ESP8266)
 SDA - D2 (ESP8266)
+
 0 - Heater Relay
 1 - Cooler Relay
+
 2 - Motion Sensor 0
 3 - Motion Sensor 1
 4 - Motion Sensor 2
+
 5 - EncoderPinA
 6 - EncoderPinB
 7 - EncoderSelect
-8 - Release Button (Dispense Water)
-9 - Solenoid Hot
-10 - Solenoid Cold
-11 - ResetWiFi Button
-12 - ResetMachine Button
+
+9 - Solenoid Cold
+10 - Solenoid Hot
+
+12 - Release Button (Dispense Water)
+
+*Reset Button - RST(ESP8266)
+
+*Solenoids:
+Relay
+Vcc - 5V
+Gnd
+In1 - Hot Relay (From SX1509)
+In2 - Cold Relay (From SX1509)
